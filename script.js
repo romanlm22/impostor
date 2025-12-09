@@ -9,10 +9,14 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // --- BASE DE DATOS DE TEMAS ---
 const data = {
-    futbol: ["Delantero Centro", "Fuera de Juego", "El Var", "Tarjetas Amarillas", "El Clásico", "Penal", "Mano de Dios", "Gol de Oro"],
-    deportes: ["Cancha de Tenis", "Pelota de Baloncesto", "Nado Sincronizado", "Maratón", "Boxeo", "Golf", "Rugby"],
-    trabajos: ["Bombero", "Cartero", "Chef de Cocina", "Arquitecto", "Veterinario", "Programador", "Dentista"],
+    futbol: ["maradona, pele", "Messi", "Cristiano Ronaldo", "Neymar", "Zidane", "Mbappé", "Ronaldinho"],
+    deportes: ["Tenis", "Baloncesto", "Nado", "Maratón", "Boxeo", "Golf", "Rugby"],
+    trabajos: ["Director", "Cartero", "Chef", "Arquitecto", "Veterinario", "Programador", "Dentista"],
     comida: ["Sopa de Tomate", "Sushi Roll", "Taco Mexicano", "Pizza Napolitana", "Hamburguesa", "Paella", "Ceviche"],
+    aleatorio: ["Arcoíris", "Montaña Rusa", "Telescopio", "Pirámide", "Canguro", "Robot", "Globo Aerostático", "Castillo de Arena", "asado", "bicicleta", "computadora", "guitarra", "helado", "jardín", "lago", "museo", "nube", "ópera", "parque", "queso", "robot", "safari", "tren", "universo", "volcán", "pizza", "hambruguesa", "yogurt", "camionjeta", "automóvil", "messi", "tenis", "chef", "sushi", "san martin", "delfin", "elefante", "belgrano", "duki", "paulo londra", "madonna"],
+    vehiculos: ["Automóvil", "Motocicleta", "Bicicleta", "Camión", "Avión", "Barco", "Tren"],
+    animales: ["Elefante", "Tigre", "Canguro", "Delfín", "Águila", "Serpiente", "Jirafa"],
+    famosos: ["Albert Einstein", "Marilyn Monroe", "Leonardo da Vinci", "Cleopatra", "William Shakespeare", "Frida Kahlo", "Martin Luther King Jr."]
 };
 
 // ====================================================
@@ -341,7 +345,7 @@ function asignarRolLocal(temaGlobal, jugadores) {
         rolCard.className = 'card normal-rol';
     }
 
-    let countdown = 2; // Transición rápida de 2 segundos
+    let countdown = 35; // Transición rápida de 2 segundos
     cuentaReg.textContent = "El juego comienza enseguida...";
 
     const interval = setInterval(() => {
