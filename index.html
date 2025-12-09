@@ -3,84 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🕵️‍♂️ ¿Quién es el Impostor? Online</title>
+    <title>🕵️‍♂️ Impostor Online</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-    <div class="container" id="inicio-pantalla">
-        <h1>🕵️‍♂️ ¿Quién es el Impostor? Online ⚽</h1>
-        <p>Entra con tu nombre para jugar.</p>
+    <div class="main-container">
 
-        <div class="opciones">
-            <label for="nombre-jugador">Tu Nombre:</label>
-            <input type="text" id="nombre-jugador" placeholder="Ej. El Profe">
-        </div>
+        <div class="panel" id="inicio-pantalla">
+            <h1>🕵️‍♂️ Impostor Online</h1>
+            <p>Introduce tu nombre y elige una opción.</p>
 
-        <hr>
+            <div class="input-group">
+                <i class="fas fa-user icon"></i>
+                <input type="text" id="nombre-jugador" placeholder="Tu Nombre">
+            </div>
 
-        <h2>Crear Nueva Sala</h2>
-        <div class="opciones">
-            <label>Selecciona una Categoría:</label>
-            <div class="categorias" id="select-categorias">
-                </div>
-        </div>
-        <button onclick="crearSala()">Crear Sala</button>
-
-        <hr>
-
-        <h2>Unirse a Sala Existente</h2>
-        <div class="opciones">
-            <label for="codigo-sala-input">Código de la Sala:</label>
-            <input type="text" id="codigo-sala-input" placeholder="Ej. A1B2C3" maxlength="6">
-        </div>
-        <button onclick="unirseSala()">Unirse a Sala</button>
-    </div>
-
-    <div class="container" id="sala-pantalla" style="display: none;">
-        <h2>Sala de Espera 🛋️</h2>
-        <p>Código: <span id="codigo-sala-display" class="tema-final">----</span></p>
-
-        <div class="opciones">
-            <label>Jugadores en Sala:</label>
-            <ul id="lista-jugadores" class="lista-jugadores">
-                </ul>
+            <button class="toggle-btn" onclick="mostrarPanelCrear()">Crear Sala</button>
+            <button class="toggle-btn secondary" onclick="mostrarPanelUnirse()">Unirse a Sala</button>
         </div>
         
-        <button id="iniciar-juego-btn" onclick="iniciarJuegoHost()" style="display: none;">
-            Iniciar Partida (Mínimo 4)
-        </button>
-        <p class="instruccion">Comparte el código de 6 letras para que tus amigos se unan.</p>
-    </div>
-
-    <div class="container" id="rol-pantalla" style="display: none;">
-        <h2 id="rol-titulo">Tu Rol es...</h2>
-        <div class="card" id="rol-asignado">
-            <p class="instruccion">¡Míralo rápido y memoriza! Luego el juego comenzará automáticamente.</p>
-            <h3 id="rol-nombre"></h3>
+        <div class="panel hidden" id="panel-crear">
+            <h2>Crear Sala</h2>
+            <div class="opciones-cat">
+                <label>Selecciona una Categoría:</label>
+                <div class="categorias" id="select-categorias">
+                    </div>
+            </div>
+            <button onclick="crearSala()">Confirmar y Crear</button>
+            <button class="secondary" onclick="mostrarPanelInicio()">Volver</button>
         </div>
-        <p id="cuenta-regresiva-rol">El juego comienza en...</p>
-    </div>
-    
-    <div class="container" id="juego-pantalla" style="display: none;">
-        <h2>¡A Jugar! ⏱️</h2>
-        <p>El Impostor no conoce el tema. ¡Discutan, pero no revelen demasiado!</p>
-        <h3 id="categoria-revelada" class="tema-final"></h3>
+
+        <div class="panel hidden" id="panel-unirse">
+            <h2>Unirse a Sala</h2>
+            <div class="input-group">
+                <i class="fas fa-door-open icon"></i>
+                <input type="text" id="codigo-sala-input" placeholder="Código (6 letras)" maxlength="6">
+            </div>
+            <button onclick="unirseSala()">Confirmar y Unirse</button>
+            <button class="secondary" onclick="mostrarPanelInicio()">Volver</button>
+        </div>
+        <div class="panel hidden" id="sala-pantalla">
+            <h2>Sala: <span id="codigo-sala-display">...</span></h2>
+            <p id="categoria-sala-display"></p>
+            
+            <div class="jugadores-list">
+                <h3>Jugadores (<span id="count-jugadores">0</span>/10):</h3>
+                <ul id="lista-jugadores">
+                    </ul>
+            </div>
+            
+            <button id="iniciar-juego-btn" onclick="iniciarJuegoHost()" style="display: none;">
+                <i class="fas fa-play"></i> Iniciar Partida
+            </button>
+        </div>
+
+        <div class="panel hidden" id="rol-pantalla">
+            <h2 id="rol-titulo">¡Mira tu Rol!</h2>
+            <div class="card" id="rol-asignado">
+                <h3 id="rol-nombre"></h3>
+                <p id="rol-instruccion"></p>
+            </div>
+            <p class="instruccion-rol">Memoriza tu rol. El juego comenzará automáticamente.</p>
+        </div>
         
-        <p class="instruccion">La votación comenzará después de la discusión.</p>
+        <div class="panel hidden" id="juego-pantalla">
+            <h2>Debate en Curso 🗣️</h2>
+            <div class="timer">Tiempo restante: <span id="timer-display">5:00</span></div>
+            <p>La categoría es: <strong id="juego-categoria-display"></strong></p>
+            <p class="instruccion">Intenten descubrir al impostor sin revelar la palabra secreta.</p>
+            
+            <button class="secondary" onclick="activarVotacion()" id="btn-activar-voto" style="display: none;">Activar Votación</button>
+        </div>
 
-        <button id="terminar-juego-btn" onclick="terminarJuego()" style="display: none;">
-            Terminar y Votar
-        </button>
-    </div>
-
-    <div class="container" id="resultado-pantalla" style="display: none;">
-        <h2>Resultado de la Partida</h2>
-        <p id="mensaje-ganador"></p>
-        <p>El tema era: <span id="tema-final-revelado" class="tema-final"></span></p>
-        <p>El Impostor era: <span id="impostor-revelado" class="tema-final"></span></p>
-        <button onclick="reiniciarJuego()">Volver a la Pantalla Principal</button>
     </div>
 
     <script src="script.js"></script>
