@@ -1,37 +1,30 @@
 // =========================================================
 // !!! ⚠️ CONFIGURACIÓN DE SUPABASE (REQUERIDO) ⚠️ !!!
 // =========================================================
-// *****************************************************************
-// IMPORTANTE: DEJA TUS CREDENCIALES PEGADAS AQUÍ
 const SUPABASE_URL = 'https://hopszyankqfxxrkicmwk.supabase.co'; 
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhvcHN6eWFua3FmeHhya2ljbXdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyNDkwMTMsImV4cCI6MjA4MDgyNTAxM30.kU8e-aPLNj9kNuZewbpl4REsAN8VenNWBJpuLuAXw6s';
-// *****************************************************************
 
-// 1. CREACIÓN DEL CLIENTE SUPABASE (FIX: Usamos 'supabaseClient' para evitar conflictos)
-// Usamos window.supabase para acceder a la librería global del CDN
+// 1. CREACIÓN DEL CLIENTE
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// --- BASE DE DATOS DE TEMAS (CONSTANTES) ---
+// --- BASE DE DATOS DE TEMAS ---
 const data = {
-    futbol: ["Delantero Centro", "Fuera de Juego", "El Var", "Tarjetas Amarillas", "El Clásico"],
-    deportes: ["Cancha de Tenis", "Pelota de Baloncesto", "Nado Sincronizado", "Maratón"],
-    trabajos: ["Bombero", "Cartero", "Chef de Cocina", "Arquitecto", "Veterinario"],
-    comida: ["Sopa de Tomate", "Sushi Roll", "Taco Mexicano", "Pizza Napolitana"],
+    futbol: ["Delantero Centro", "Fuera de Juego", "El Var", "Tarjetas Amarillas", "El Clásico", "Penal", "Mano de Dios", "Gol de Oro"],
+    deportes: ["Cancha de Tenis", "Pelota de Baloncesto", "Nado Sincronizado", "Maratón", "Boxeo", "Golf", "Rugby"],
+    trabajos: ["Bombero", "Cartero", "Chef de Cocina", "Arquitecto", "Veterinario", "Programador", "Dentista"],
+    comida: ["Sopa de Tomate", "Sushi Roll", "Taco Mexicano", "Pizza Napolitana", "Hamburguesa", "Paella", "Ceviche"],
 };
 
 // ====================================================
-// 2. DECLARACIÓN DE VARIABLES DE ESTADO Y DOM
-// (El orden es CRÍTICO para evitar ReferenceError)
+// 2. DECLARACIÓN DE VARIABLES DE ESTADO
 // ====================================================
-
-// --- VARIABLES DE ESTADO (LET) ---
 let salaActual = null;
 let nombreJugador = ''; 
 let categoriaSeleccionada = '';
 let esHost = false;
 let supabaseSubscription = null;
 
-// --- REFERENCIAS DEL DOM (CONST) ---
+// --- REFERENCIAS DEL DOM ---
 const pantallas = {
     inicio: document.getElementById('inicio-pantalla'),
     crear: document.getElementById('panel-crear'),
@@ -44,12 +37,9 @@ const selectCategorias = document.getElementById('select-categorias');
 
 
 // =========================================================
-// I. GESTIÓN DE PANTALLAS (UX)
+// I. GESTIÓN DE PANTALLAS
 // =========================================================
 
-/**
- * Muestra solo el panel solicitado, ocultando todos los demás.
- */
 function mostrarPanel(nombrePanel) {
     Object.values(pantallas).forEach(panel => {
         if (panel) panel.classList.add('hidden');
@@ -59,26 +49,22 @@ function mostrarPanel(nombrePanel) {
     }
 }
 
-// Funciones expuestas al HTML:
+function mostrarPanelInicio() { mostrarPanel('inicio'); }
 
-function mostrarPanelInicio() {
-    mostrarPanel('inicio');
-}
 function mostrarPanelCrear() {
     nombreJugador = document.getElementById('nombre-jugador').value.trim();
     if (!nombreJugador) return alert('Por favor, ingresa tu nombre primero.');
     mostrarPanel('crear');
 }
+
 function mostrarPanelUnirse() {
     nombreJugador = document.getElementById('nombre-jugador').value.trim();
     if (!nombreJugador) return alert('Por favor, ingresa tu nombre primero.');
     mostrarPanel('unirse');
 }
 
-/**
- * Carga los botones de categoría al iniciar la página.
- */
 function cargarCategorias() {
+    selectCategorias.innerHTML = ''; // Limpiar por si acaso
     Object.keys(data).forEach(key => {
         const btn = document.createElement('button');
         btn.textContent = key.toUpperCase();
@@ -88,9 +74,6 @@ function cargarCategorias() {
     });
 }
 
-/**
- * Maneja la selección de una categoría.
- */
 function seleccionarCategoria(key, element) {
     categoriaSeleccionada = key;
     document.querySelectorAll('.categoria-btn').forEach(btn => {
@@ -100,24 +83,19 @@ function seleccionarCategoria(key, element) {
 }
 
 // =========================================================
-// II. GESTIÓN DE SALAS (SUPABASE REALTIME)
+// II. GESTIÓN DE SALAS (SUPABASE)
 // =========================================================
 
-/** Genera un código de sala de 6 letras. */
 function generarCodigo() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-/**
- * Host: Crea la sala en Supabase.
- */
 async function crearSala() {
     if (!categoriaSeleccionada) return alert('Selecciona una categoría.');
     
     const codigo = generarCodigo();
-    const jugadorId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+    const jugadorId = Date.now().toString(36);
 
-    // NOTA: Usamos supabaseClient en lugar de supabase
     const { data: nuevaSala, error } = await supabaseClient
         .from('salas')
         .insert({
@@ -131,9 +109,8 @@ async function crearSala() {
         .single();
 
     if (error) {
-        console.error('Error al crear sala:', error);
-        alert('Error al crear la sala. Revisa RLS y la estructura de la tabla.');
-        return;
+        console.error('Error:', error);
+        return alert('Error al crear sala. Intenta de nuevo.');
     }
 
     salaActual = nuevaSala;
@@ -142,32 +119,26 @@ async function crearSala() {
     iniciarSuscripcionSala(codigo);
 }
 
-/**
- * Jugador: Se une a una sala existente.
- */
 async function unirseSala() {
     const codigo = document.getElementById('codigo-sala-input').value.trim().toUpperCase();
-    if (!codigo) return alert('Ingresa el código de la sala.');
+    if (!codigo) return alert('Ingresa el código.');
     
-    const jugadorId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+    const jugadorId = Date.now().toString(36);
 
-    // 1. Obtener la sala
     let { data: sala, error } = await supabaseClient
         .from('salas')
-        .select('id, jugadores, estado, categoria')
+        .select('*')
         .eq('codigo', codigo)
         .single();
 
-    if (error || !sala) return alert('Código de sala no válido o sala no encontrada.');
-    if (sala.estado !== 'ESPERA') return alert('La partida ya ha comenzado.');
-    if (sala.jugadores.length >= 10) return alert('La sala está llena (máx. 10 jugadores).');
+    if (error || !sala) return alert('Sala no encontrada.');
+    if (sala.estado !== 'ESPERA') return alert('La partida ya empezó.');
+    if (sala.jugadores.length >= 10) return alert('Sala llena.');
 
-    // 2. Agregar el nuevo jugador
-    const nuevoJugador = { id: jugadorId, nombre: nombreJugador, esHost: false, rol: 'PENDIENTE' };
-    
     const yaExiste = sala.jugadores.some(j => j.nombre === nombreJugador);
-    if(yaExiste) return alert('Ya hay un jugador con ese nombre en la sala.');
+    if(yaExiste) return alert('Nombre ya usado en esta sala.');
 
+    const nuevoJugador = { id: jugadorId, nombre: nombreJugador, esHost: false, rol: 'PENDIENTE' };
     const jugadoresActualizados = [...sala.jugadores, nuevoJugador];
 
     const { error: updateError } = await supabaseClient
@@ -175,10 +146,7 @@ async function unirseSala() {
         .update({ jugadores: jugadoresActualizados })
         .eq('id', sala.id);
 
-    if (updateError) {
-        console.error('Error al unirse:', updateError);
-        return alert('Error al unirse a la sala.');
-    }
+    if (updateError) return alert('Error al unirse.');
 
     salaActual = sala;
     esHost = false;
@@ -186,26 +154,18 @@ async function unirseSala() {
     iniciarSuscripcionSala(codigo);
 }
 
-/**
- * Muestra la interfaz de sala de espera y actualiza displays.
- */
 function mostrarSalaEspera(codigo, categoria) {
     mostrarPanel('sala');
     document.getElementById('codigo-sala-display').textContent = codigo;
-    document.getElementById('categoria-sala-display').textContent = `Categoría elegida: ${categoria.toUpperCase()}`;
+    document.getElementById('categoria-sala-display').textContent = `Categoría: ${categoria.toUpperCase()}`;
 }
 
 // =========================================================
-// III. REALTIME: SUSCRIPCIÓN Y ACTUALIZACIÓN
+// III. REALTIME
 // =========================================================
 
-/**
- * Inicia la escucha en tiempo real de los cambios en la sala.
- */
 function iniciarSuscripcionSala(codigo) {
-    if (supabaseSubscription) {
-        supabaseClient.removeChannel(supabaseSubscription);
-    }
+    if (supabaseSubscription) supabaseClient.removeChannel(supabaseSubscription);
 
     supabaseSubscription = supabaseClient
         .channel(`sala-${codigo}`)
@@ -218,25 +178,20 @@ function iniciarSuscripcionSala(codigo) {
         .subscribe();
 }
 
-/**
- * Maneja los cambios de estado y datos de la sala recibidos en tiempo real.
- */
 function manejarCambioSala(nuevaSala) {
     salaActual = nuevaSala;
-    
     actualizarListaJugadores(nuevaSala.jugadores);
 
     if (nuevaSala.estado === 'EN_JUEGO') {
+        // Si el juego empieza
         asignarRolLocal(nuevaSala.tema, nuevaSala.jugadores);
     } else if (nuevaSala.estado === 'ESPERA') {
+        // Si el juego se reinicia, volvemos a la sala
         mostrarPanel('sala');
-        document.getElementById('categoria-sala-display').textContent = `Categoría elegida: ${nuevaSala.categoria.toUpperCase()}`;
+        document.getElementById('categoria-sala-display').textContent = `Categoría: ${nuevaSala.categoria.toUpperCase()}`;
     }
 }
 
-/**
- * Actualiza la lista de jugadores en la interfaz de la sala de espera.
- */
 function actualizarListaJugadores(jugadores) {
     const lista = document.getElementById('lista-jugadores');
     if (!lista) return;
@@ -244,47 +199,34 @@ function actualizarListaJugadores(jugadores) {
     lista.innerHTML = '';
     jugadores.forEach(j => {
         const li = document.createElement('li');
-        li.innerHTML = `
-            <span>${j.nombre}</span>
-            <span style="font-size: 0.8em; color: ${j.esHost ? 'var(--color-principal)' : '#888'};">
-                ${j.esHost ? 'HOST' : ''}
-            </span>
-        `;
+        li.innerHTML = `<span>${j.nombre}</span> <span style="font-size:0.8em; color:#aaa;">${j.esHost ? '👑' : ''}</span>`;
         lista.appendChild(li);
     });
 
     document.getElementById('count-jugadores').textContent = jugadores.length;
     
-    // Mostrar/Ocultar botón de Inicio
+    // Botón Iniciar solo para Host
     const btnIniciar = document.getElementById('iniciar-juego-btn');
-    if (btnIniciar) {
-        btnIniciar.style.display = (esHost && jugadores.length >= 4) ? 'block' : 'none';
-    }
+    if (btnIniciar) btnIniciar.style.display = (esHost && jugadores.length >= 4) ? 'block' : 'none';
 }
 
 // =========================================================
 // IV. LÓGICA DEL JUEGO
 // =========================================================
 
-/**
- * Host: Inicia la partida, selecciona tema y asigna el impostor.
- */
 async function iniciarJuegoHost() {
-    if (salaActual.jugadores.length < 4) return alert("Necesitas al menos 4 jugadores para iniciar.");
+    if (salaActual.jugadores.length < 4) return alert("Mínimo 4 jugadores.");
     
-    // 1. Asignar Tema e Impostor
     const temas = data[salaActual.categoria]; 
     const tema = temas[Math.floor(Math.random() * temas.length)];
     const impostorIndex = Math.floor(Math.random() * salaActual.jugadores.length);
     
-    // 2. Asignar roles a los jugadores
     const jugadoresAsignados = salaActual.jugadores.map((j, index) => ({
         ...j,
         rol: (index === impostorIndex) ? 'IMPOSTOR' : 'NORMAL'
     }));
     
-    // 3. Actualizar el estado en Supabase
-    const { error } = await supabaseClient
+    await supabaseClient
         .from('salas')
         .update({
             estado: 'EN_JUEGO',
@@ -292,49 +234,69 @@ async function iniciarJuegoHost() {
             jugadores: jugadoresAsignados
         })
         .eq('id', salaActual.id);
-
-    if (error) console.error('Error al iniciar juego:', error);
 }
 
-/**
- * Asigna el rol al jugador localmente (activado por el evento Realtime).
- */
+// --- NUEVA FUNCIÓN: REINICIAR RONDA (Solo Host) ---
+async function reiniciarRondaHost() {
+    // 1. Limpiamos los roles de los jugadores
+    const jugadoresReset = salaActual.jugadores.map(j => ({
+        ...j,
+        rol: 'PENDIENTE'
+    }));
+
+    // 2. Enviamos el update a Supabase para volver al estado 'ESPERA'
+    const { error } = await supabaseClient
+        .from('salas')
+        .update({
+            estado: 'ESPERA',
+            tema: '', // Borramos el tema anterior
+            jugadores: jugadoresReset
+        })
+        .eq('id', salaActual.id);
+
+    if (error) alert("Error al reiniciar ronda");
+}
+
 function asignarRolLocal(temaGlobal, jugadores) {
     const miJugador = jugadores.find(j => j.nombre === nombreJugador); 
-    
     if (!miJugador) return;
 
     mostrarPanel('rol');
     
     const rolCard = document.getElementById('rol-asignado');
-    const rolNombreDisplay = document.getElementById('rol-nombre');
-    const rolInstruccionDisplay = document.getElementById('rol-instruccion');
-    const cuentaRegresiva = document.getElementById('cuenta-regresiva-rol');
+    const rolNombre = document.getElementById('rol-nombre');
+    const rolInstr = document.getElementById('rol-instruccion');
+    const cuentaReg = document.getElementById('cuenta-regresiva-rol');
 
     if (miJugador.rol === 'IMPOSTOR') {
-        rolNombreDisplay.textContent = "¡IMPOSTOR!";
-        rolInstruccionDisplay.textContent = "¡No conoces la palabra! Disimula y adivina el tema para ganar.";
+        rolNombre.textContent = "¡IMPOSTOR!";
+        rolInstr.textContent = "¡Disimula! No conoces la palabra.";
         rolCard.className = 'card impostor-rol';
     } else {
-        rolNombreDisplay.textContent = temaGlobal.toUpperCase();
-        rolInstruccionDisplay.textContent = "¡Conoces la palabra secreta! Descubre quién de los demás está mintiendo.";
+        rolNombre.textContent = temaGlobal.toUpperCase();
+        rolInstr.textContent = "¡Conoces la palabra! Descubre al mentiroso.";
         rolCard.className = 'card normal-rol';
     }
 
-    // Transicionar automáticamente a la pantalla de juego después de unos segundos
     let countdown = 5;
     const interval = setInterval(() => {
-        cuentaRegresiva.textContent = `El juego comienza en ${countdown}...`;
+        cuentaReg.textContent = `El juego comienza en ${countdown}...`;
         countdown--;
         if (countdown < 0) {
             clearInterval(interval);
             mostrarPanel('juego');
             document.getElementById('juego-categoria-display').textContent = salaActual.categoria.toUpperCase();
-            if (esHost) document.getElementById('btn-activar-voto').style.display = 'block';
+            
+            // Mostrar controles SOLO si es Host
+            if (esHost) {
+                document.getElementById('btn-reiniciar').style.display = 'block';
+                // document.getElementById('btn-activar-voto').style.display = 'block';
+            } else {
+                document.getElementById('btn-reiniciar').style.display = 'none';
+            }
         }
     }, 1000);
 }
-
 
 // =========================================================
 // V. INICIALIZACIÓN
