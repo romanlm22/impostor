@@ -284,7 +284,7 @@ async function cambiarCategoriaHost(nuevaCat) {
 }
 
 async function iniciarJuegoHost() {
-    if (salaActual.jugadores.length < 4) return alert("Mínimo 4 jugadores.");
+    if (salaActual.jugadores.length < 3) return alert("Mínimo 3 jugadores.");
     
     // Usamos la categoría que esté guardada actualmente en salaActual (que viene de la BD)
     const temas = data[salaActual.categoria]; 
