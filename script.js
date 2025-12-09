@@ -1,5 +1,5 @@
 // =========================================================
-// !!! ⚠️ CONFIGURACIÓN DE SUPABASE (REQUERIDO) ⚠️ !!!
+// !!! ⚠️ CONFIGURACIÓN DE SUPABASE ⚠️ !!!
 // =========================================================
 const SUPABASE_URL = 'https://hopszyankqfxxrkicmwk.supabase.co'; 
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhvcHN6eWFua3FmeHhya2ljbXdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyNDkwMTMsImV4cCI6MjA4MDgyNTAxM30.kU8e-aPLNj9kNuZewbpl4REsAN8VenNWBJpuLuAXw6s';
@@ -16,7 +16,7 @@ const data = {
 };
 
 // ====================================================
-// 2. DECLARACIÓN DE VARIABLES DE ESTADO
+// 2. VARIABLES DE ESTADO
 // ====================================================
 let salaActual = null;
 let nombreJugador = ''; 
@@ -33,8 +33,6 @@ const pantallas = {
     rol: document.getElementById('rol-pantalla'),
     juego: document.getElementById('juego-pantalla')
 };
-const selectCategorias = document.getElementById('select-categorias');
-
 
 // =========================================================
 // I. GESTIÓN DE PANTALLAS
@@ -63,22 +61,43 @@ function mostrarPanelUnirse() {
     mostrarPanel('unirse');
 }
 
+/**
+ * Carga las categorías tanto en el panel de crear como en la sala de espera.
+ */
 function cargarCategorias() {
-    selectCategorias.innerHTML = ''; // Limpiar por si acaso
+    const contenedorCrear = document.getElementById('select-categorias');
+    const contenedorEspera = document.getElementById('categorias-sala-espera');
+    
+    // Limpiamos
+    contenedorCrear.innerHTML = '';
+    contenedorEspera.innerHTML = '';
+
     Object.keys(data).forEach(key => {
-        const btn = document.createElement('button');
-        btn.textContent = key.toUpperCase();
-        btn.classList.add('categoria-btn');
-        btn.onclick = () => seleccionarCategoria(key, btn);
-        selectCategorias.appendChild(btn);
+        // Botón para pantalla "Crear Sala"
+        const btn1 = document.createElement('button');
+        btn1.textContent = key.toUpperCase();
+        btn1.classList.add('categoria-btn');
+        btn1.dataset.cat = key; // Marcador para estilos
+        btn1.onclick = () => seleccionarCategoriaLocal(key, btn1);
+        contenedorCrear.appendChild(btn1);
+
+        // Botón para pantalla "Sala de Espera" (Solo Host lo usará)
+        const btn2 = document.createElement('button');
+        btn2.textContent = key.toUpperCase();
+        btn2.classList.add('categoria-btn');
+        btn2.style.fontSize = '0.8em'; // Un poco más chicos en la sala
+        btn2.style.padding = '5px';
+        btn2.dataset.cat = key;
+        btn2.onclick = () => cambiarCategoriaHost(key); // Esta función actualiza la BD
+        contenedorEspera.appendChild(btn2);
     });
 }
 
-function seleccionarCategoria(key, element) {
+function seleccionarCategoriaLocal(key, element) {
     categoriaSeleccionada = key;
-    document.querySelectorAll('.categoria-btn').forEach(btn => {
-        btn.classList.remove('selected');
-    });
+    // Quitamos 'selected' de todos los botones en el panel de crear
+    const panelCrear = document.getElementById('select-categorias');
+    panelCrear.querySelectorAll('.categoria-btn').forEach(btn => btn.classList.remove('selected'));
     element.classList.add('selected');
 }
 
@@ -110,11 +129,12 @@ async function crearSala() {
 
     if (error) {
         console.error('Error:', error);
-        return alert('Error al crear sala. Intenta de nuevo.');
+        return alert('Error al crear sala.');
     }
 
     salaActual = nuevaSala;
     esHost = true;
+    
     mostrarSalaEspera(codigo, categoriaSeleccionada);
     iniciarSuscripcionSala(codigo);
 }
@@ -157,7 +177,33 @@ async function unirseSala() {
 function mostrarSalaEspera(codigo, categoria) {
     mostrarPanel('sala');
     document.getElementById('codigo-sala-display').textContent = codigo;
-    document.getElementById('categoria-sala-display').textContent = `Categoría: ${categoria.toUpperCase()}`;
+    actualizarDisplayCategoria(categoria);
+
+    // Mostrar controles de cambio de categoría SOLO al Host
+    const controlesHost = document.getElementById('host-controls-categoria');
+    if (esHost) {
+        controlesHost.style.display = 'block';
+    } else {
+        controlesHost.style.display = 'none';
+    }
+}
+
+// Nueva función auxiliar para actualizar texto y botones visualmente
+function actualizarDisplayCategoria(categoria) {
+    // 1. Texto
+    document.getElementById('categoria-sala-display').textContent = `Categoría Actual: ${categoria.toUpperCase()}`;
+    
+    // 2. Resaltar botón en la sala de espera (para el host)
+    const container = document.getElementById('categorias-sala-espera');
+    container.querySelectorAll('.categoria-btn').forEach(btn => {
+        btn.classList.remove('selected');
+        if (btn.dataset.cat === categoria) {
+            btn.classList.add('selected');
+        }
+    });
+    
+    // Guardamos localmente
+    categoriaSeleccionada = categoria;
 }
 
 // =========================================================
@@ -180,15 +226,21 @@ function iniciarSuscripcionSala(codigo) {
 
 function manejarCambioSala(nuevaSala) {
     salaActual = nuevaSala;
+    
+    // Actualizar lista de jugadores
     actualizarListaJugadores(nuevaSala.jugadores);
 
+    // Detectar CAMBIO DE CATEGORÍA en tiempo real (si el host la cambia)
+    if (nuevaSala.categoria !== categoriaSeleccionada) {
+        actualizarDisplayCategoria(nuevaSala.categoria);
+    }
+
     if (nuevaSala.estado === 'EN_JUEGO') {
-        // Si el juego empieza
         asignarRolLocal(nuevaSala.tema, nuevaSala.jugadores);
     } else if (nuevaSala.estado === 'ESPERA') {
-        // Si el juego se reinicia, volvemos a la sala
+        // Si volvemos a la sala
         mostrarPanel('sala');
-        document.getElementById('categoria-sala-display').textContent = `Categoría: ${nuevaSala.categoria.toUpperCase()}`;
+        actualizarDisplayCategoria(nuevaSala.categoria);
     }
 }
 
@@ -205,7 +257,6 @@ function actualizarListaJugadores(jugadores) {
 
     document.getElementById('count-jugadores').textContent = jugadores.length;
     
-    // Botón Iniciar solo para Host
     const btnIniciar = document.getElementById('iniciar-juego-btn');
     if (btnIniciar) btnIniciar.style.display = (esHost && jugadores.length >= 4) ? 'block' : 'none';
 }
@@ -214,9 +265,24 @@ function actualizarListaJugadores(jugadores) {
 // IV. LÓGICA DEL JUEGO
 // =========================================================
 
+// --- NUEVA FUNCIÓN: HOST CAMBIA CATEGORÍA EN TIEMPO REAL ---
+async function cambiarCategoriaHost(nuevaCat) {
+    if (!esHost) return;
+    
+    // Enviamos el update a Supabase
+    // Esto disparará 'manejarCambioSala' en todos los clientes
+    const { error } = await supabaseClient
+        .from('salas')
+        .update({ categoria: nuevaCat })
+        .eq('id', salaActual.id);
+        
+    if (error) console.error("Error al cambiar categoría", error);
+}
+
 async function iniciarJuegoHost() {
     if (salaActual.jugadores.length < 4) return alert("Mínimo 4 jugadores.");
     
+    // Usamos la categoría que esté guardada actualmente en salaActual (que viene de la BD)
     const temas = data[salaActual.categoria]; 
     const tema = temas[Math.floor(Math.random() * temas.length)];
     const impostorIndex = Math.floor(Math.random() * salaActual.jugadores.length);
@@ -236,20 +302,17 @@ async function iniciarJuegoHost() {
         .eq('id', salaActual.id);
 }
 
-// --- NUEVA FUNCIÓN: REINICIAR RONDA (Solo Host) ---
 async function reiniciarRondaHost() {
-    // 1. Limpiamos los roles de los jugadores
     const jugadoresReset = salaActual.jugadores.map(j => ({
         ...j,
         rol: 'PENDIENTE'
     }));
 
-    // 2. Enviamos el update a Supabase para volver al estado 'ESPERA'
     const { error } = await supabaseClient
         .from('salas')
         .update({
             estado: 'ESPERA',
-            tema: '', // Borramos el tema anterior
+            tema: '', 
             jugadores: jugadoresReset
         })
         .eq('id', salaActual.id);
@@ -257,14 +320,10 @@ async function reiniciarRondaHost() {
     if (error) alert("Error al reiniciar ronda");
 }
 
-/**
- * Asigna el rol al jugador localmente (activado por el evento Realtime).
- */
 function asignarRolLocal(temaGlobal, jugadores) {
     const miJugador = jugadores.find(j => j.nombre === nombreJugador); 
     if (!miJugador) return;
 
-    // 1. Mostrar pantalla de Rol
     mostrarPanel('rol');
     
     const rolCard = document.getElementById('rol-asignado');
@@ -272,7 +331,6 @@ function asignarRolLocal(temaGlobal, jugadores) {
     const rolInstr = document.getElementById('rol-instruccion');
     const cuentaReg = document.getElementById('cuenta-regresiva-rol');
 
-    // 2. Configurar textos y colores
     if (miJugador.rol === 'IMPOSTOR') {
         rolNombre.textContent = "¡IMPOSTOR!";
         rolInstr.textContent = "🤫 Shhh... No conoces la palabra.";
@@ -283,38 +341,28 @@ function asignarRolLocal(temaGlobal, jugadores) {
         rolCard.className = 'card normal-rol';
     }
 
-    // 3. TRANSICIÓN RÁPIDA (Aquí está el cambio)
-    // Cambiamos el tiempo a solo 2 segundos para que sea casi inmediato
-    let countdown = 2; 
-
+    let countdown = 2; // Transición rápida de 2 segundos
     cuentaReg.textContent = "El juego comienza enseguida...";
 
     const interval = setInterval(() => {
         countdown--;
         if (countdown <= 0) {
             clearInterval(interval);
-            
-            // 4. Mostrar Pantalla de Juego
             mostrarPanel('juego');
-            
-            // Mostrar la categoría en la pantalla de juego
             document.getElementById('juego-categoria-display').textContent = salaActual.categoria.toUpperCase();
             
-            // 5. Mostrar controles SOLO si eres el Host
             if (esHost) {
                 const btnReiniciar = document.getElementById('btn-reiniciar');
                 if (btnReiniciar) btnReiniciar.style.display = 'block';
                 
-                // Opcional: Mostrar botón de votación
                 const btnVoto = document.getElementById('btn-activar-voto');
                 if (btnVoto) btnVoto.style.display = 'block';
             } else {
-                // Asegurar que estén ocultos para los demás
                 const btnReiniciar = document.getElementById('btn-reiniciar');
                 if (btnReiniciar) btnReiniciar.style.display = 'none';
             }
         }
-    }, 1000); // Se actualiza cada 1 segundo
+    }, 1000);
 }
 
 // =========================================================
