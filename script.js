@@ -7,24 +7,27 @@ const SUPABASE_URL = 'https://hopszyankqfxxrkicmwk.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhvcHN6eWFua3FmeHhya2ljbXdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyNDkwMTMsImV4cCI6MjA4MDgyNTAxM30.kU8e-aPLNj9kNuZewbpl4REsAN8VenNWBJpuLuAXw6s';
 // *****************************************************************
 
+// 1. CREACIÓN DEL CLIENTE SUPABASE (Depende de las constantes de arriba)
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // --- BASE DE DATOS DE TEMAS ---
 const data = {
-    futbol: ["Delantero Centro", "Fuera de Juego", "El Var", "Tarjetas Amarillas", "El Clásico"],
-    deportes: ["Cancha de Tenis", "Pelota de Baloncesto", "Nado Sincronizado", "Maratón"],
-    trabajos: ["Bombero", "Cartero", "Chef de Cocina", "Arquitecto", "Veterinario"],
-    comida: ["Sopa de Tomate", "Sushi Roll", "Taco Mexicano", "Pizza Napolitana"],
+    // ... tus temas ...
 };
+
+// ====================================================
+// 2. DECLARACIÓN DE VARIABLES DE ESTADO Y DOM (LET y CONST)
+// (Esto debe ejecutarse antes de que cualquier función 'mostrarPanel...' se use)
+// ====================================================
 
 // --- VARIABLES DE ESTADO ---
 let salaActual = null;
-let nombreJugador = '';
+let nombreJugador = ''; // <-- ¡CRÍTICO! Definida antes de su uso.
 let categoriaSeleccionada = '';
 let esHost = false;
 let supabaseSubscription = null;
 
-// --- REFERENCIAS DEL DOM (Usando 'panel' para consistencia con el HTML) ---
+// --- REFERENCIAS DEL DOM ---
 const pantallas = {
     inicio: document.getElementById('inicio-pantalla'),
     crear: document.getElementById('panel-crear'),
@@ -34,7 +37,6 @@ const pantallas = {
     juego: document.getElementById('juego-pantalla')
 };
 const selectCategorias = document.getElementById('select-categorias');
-
 
 // =========================================================
 // I. GESTIÓN DE PANTALLAS (UX)
