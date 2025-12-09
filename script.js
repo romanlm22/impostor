@@ -7,27 +7,30 @@ const SUPABASE_URL = 'https://hopszyankqfxxrkicmwk.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhvcHN6eWFua3FmeHhya2ljbXdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyNDkwMTMsImV4cCI6MjA4MDgyNTAxM30.kU8e-aPLNj9kNuZewbpl4REsAN8VenNWBJpuLuAXw6s';
 // *****************************************************************
 
-// 1. CREACIÓN DEL CLIENTE SUPABASE (Depende de las constantes de arriba)
+// 1. CREACIÓN DEL CLIENTE SUPABASE
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// --- BASE DE DATOS DE TEMAS ---
+// --- BASE DE DATOS DE TEMAS (CONSTANTES) ---
 const data = {
-    // ... tus temas ...
+    futbol: ["Delantero Centro", "Fuera de Juego", "El Var", "Tarjetas Amarillas", "El Clásico"],
+    deportes: ["Cancha de Tenis", "Pelota de Baloncesto", "Nado Sincronizado", "Maratón"],
+    trabajos: ["Bombero", "Cartero", "Chef de Cocina", "Arquitecto", "Veterinario"],
+    comida: ["Sopa de Tomate", "Sushi Roll", "Taco Mexicano", "Pizza Napolitana"],
 };
 
 // ====================================================
-// 2. DECLARACIÓN DE VARIABLES DE ESTADO Y DOM (LET y CONST)
-// (Esto debe ejecutarse antes de que cualquier función 'mostrarPanel...' se use)
+// 2. DECLARACIÓN DE VARIABLES DE ESTADO Y DOM
+// (El orden es CRÍTICO para evitar ReferenceError)
 // ====================================================
 
-// --- VARIABLES DE ESTADO ---
+// --- VARIABLES DE ESTADO (LET) ---
 let salaActual = null;
-let nombreJugador = ''; // <-- ¡CRÍTICO! Definida antes de su uso.
+let nombreJugador = ''; // Definido antes de su primer uso en mostrarPanelCrear/Unirse
 let categoriaSeleccionada = '';
 let esHost = false;
 let supabaseSubscription = null;
 
-// --- REFERENCIAS DEL DOM ---
+// --- REFERENCIAS DEL DOM (CONST) ---
 const pantallas = {
     inicio: document.getElementById('inicio-pantalla'),
     crear: document.getElementById('panel-crear'),
@@ -37,6 +40,7 @@ const pantallas = {
     juego: document.getElementById('juego-pantalla')
 };
 const selectCategorias = document.getElementById('select-categorias');
+
 
 // =========================================================
 // I. GESTIÓN DE PANTALLAS (UX)
@@ -54,17 +58,19 @@ function mostrarPanel(nombrePanel) {
     }
 }
 
-// Funciones expuestas al HTML que causaban el ReferenceError:
+// Funciones expuestas al HTML:
 
 function mostrarPanelInicio() {
     mostrarPanel('inicio');
 }
 function mostrarPanelCrear() {
+    // nombreJugador se lee del input aquí
     nombreJugador = document.getElementById('nombre-jugador').value.trim();
     if (!nombreJugador) return alert('Por favor, ingresa tu nombre primero.');
     mostrarPanel('crear');
 }
 function mostrarPanelUnirse() {
+    // nombreJugador se lee del input aquí
     nombreJugador = document.getElementById('nombre-jugador').value.trim();
     if (!nombreJugador) return alert('Por favor, ingresa tu nombre primero.');
     mostrarPanel('unirse');
@@ -126,7 +132,7 @@ async function crearSala() {
 
     if (error) {
         console.error('Error al crear sala:', error);
-        alert('Error al crear la sala. Inténtalo de nuevo. Revisa RLS y la estructura de la tabla.');
+        alert('Error al crear la sala. Revisa RLS y la estructura de la tabla.');
         return;
     }
 
@@ -199,7 +205,6 @@ function mostrarSalaEspera(codigo, categoria) {
  */
 function iniciarSuscripcionSala(codigo) {
     if (supabaseSubscription) {
-        // Detener la suscripción anterior para evitar duplicados
         supabase.removeChannel(supabaseSubscription);
     }
 
