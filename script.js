@@ -262,7 +262,7 @@ function actualizarListaJugadores(jugadores) {
     document.getElementById('count-jugadores').textContent = jugadores.length;
     
     const btnIniciar = document.getElementById('iniciar-juego-btn');
-    if (btnIniciar) btnIniciar.style.display = (esHost && jugadores.length >= 4) ? 'block' : 'none';
+    if (btnIniciar) btnIniciar.style.display = (esHost && jugadores.length >= 3) ? 'block' : 'none';
 }
 
 // =========================================================
