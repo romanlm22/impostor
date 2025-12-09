@@ -1,0 +1,136 @@
+/* Variables */
+:root {
+    --color-principal: #3498db;
+    --color-fondo: #ecf0f1;
+    --color-tarjeta: #ffffff;
+    --color-texto: #2c3e50;
+    --color-impostor: #e74c3c;
+    --color-normal: #2ecc71;
+}
+
+/* Estilos Generales */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: var(--color-fondo);
+    color: var(--color-texto);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+}
+
+.container {
+    background-color: var(--color-tarjeta);
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    width: 90%;
+    max-width: 500px;
+    text-align: center;
+}
+
+h1, h2 {
+    color: var(--color-principal);
+    margin-bottom: 20px;
+}
+
+/* Opciones de Inicio */
+.opciones {
+    margin-bottom: 15px;
+    text-align: left;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+input[type="number"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #bdc3c7;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+
+/* Categorías */
+.categorias {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.categoria-btn {
+    flex-grow: 1;
+    padding: 10px 15px;
+    border: 2px solid var(--color-principal);
+    background-color: transparent;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.categoria-btn.selected {
+    background-color: var(--color-principal);
+    color: white;
+    font-weight: bold;
+}
+
+/* Botones */
+button {
+    background-color: var(--color-principal);
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: bold;
+    margin-top: 15px;
+    transition: background-color 0.2s;
+    width: 100%;
+}
+
+button:hover {
+    background-color: #2980b9;
+}
+
+/* Tarjeta de Rol */
+.card {
+    background-color: var(--color-tarjeta);
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin: 20px 0;
+    min-height: 150px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+#rol-nombre {
+    font-size: 2em;
+    color: var(--color-texto);
+}
+
+.instruccion {
+    font-style: italic;
+    color: #7f8c8d;
+    margin-bottom: 15px;
+}
+
+/* Pantalla Final */
+.tema-final {
+    font-size: 2.5em;
+    color: var(--color-normal); /* Usar un color distinto para el tema revelado */
+    padding: 10px;
+    border: 2px dashed var(--color-normal);
+    border-radius: 5px;
+}
+
+#impostor-pantalla h2 {
+    color: var(--color-impostor);
+}
