@@ -7,8 +7,9 @@ const SUPABASE_URL = 'https://hopszyankqfxxrkicmwk.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhvcHN6eWFua3FmeHhya2ljbXdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyNDkwMTMsImV4cCI6MjA4MDgyNTAxM30.kU8e-aPLNj9kNuZewbpl4REsAN8VenNWBJpuLuAXw6s';
 // *****************************************************************
 
-// 1. CREACIÓN DEL CLIENTE SUPABASE
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// 1. CREACIÓN DEL CLIENTE SUPABASE (FIX: Usamos 'supabaseClient' para evitar conflictos)
+// Usamos window.supabase para acceder a la librería global del CDN
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // --- BASE DE DATOS DE TEMAS (CONSTANTES) ---
 const data = {
@@ -25,7 +26,7 @@ const data = {
 
 // --- VARIABLES DE ESTADO (LET) ---
 let salaActual = null;
-let nombreJugador = ''; // Definido antes de su primer uso en mostrarPanelCrear/Unirse
+let nombreJugador = ''; 
 let categoriaSeleccionada = '';
 let esHost = false;
 let supabaseSubscription = null;
@@ -64,13 +65,11 @@ function mostrarPanelInicio() {
     mostrarPanel('inicio');
 }
 function mostrarPanelCrear() {
-    // nombreJugador se lee del input aquí
     nombreJugador = document.getElementById('nombre-jugador').value.trim();
     if (!nombreJugador) return alert('Por favor, ingresa tu nombre primero.');
     mostrarPanel('crear');
 }
 function mostrarPanelUnirse() {
-    // nombreJugador se lee del input aquí
     nombreJugador = document.getElementById('nombre-jugador').value.trim();
     if (!nombreJugador) return alert('Por favor, ingresa tu nombre primero.');
     mostrarPanel('unirse');
@@ -118,7 +117,8 @@ async function crearSala() {
     const codigo = generarCodigo();
     const jugadorId = Date.now().toString(36) + Math.random().toString(36).substr(2);
 
-    const { data: nuevaSala, error } = await supabase
+    // NOTA: Usamos supabaseClient en lugar de supabase
+    const { data: nuevaSala, error } = await supabaseClient
         .from('salas')
         .insert({
             codigo: codigo,
@@ -152,7 +152,7 @@ async function unirseSala() {
     const jugadorId = Date.now().toString(36) + Math.random().toString(36).substr(2);
 
     // 1. Obtener la sala
-    let { data: sala, error } = await supabase
+    let { data: sala, error } = await supabaseClient
         .from('salas')
         .select('id, jugadores, estado, categoria')
         .eq('codigo', codigo)
@@ -165,13 +165,12 @@ async function unirseSala() {
     // 2. Agregar el nuevo jugador
     const nuevoJugador = { id: jugadorId, nombre: nombreJugador, esHost: false, rol: 'PENDIENTE' };
     
-    // Verificar si el jugador ya está en la sala (prevención de duplicados)
     const yaExiste = sala.jugadores.some(j => j.nombre === nombreJugador);
     if(yaExiste) return alert('Ya hay un jugador con ese nombre en la sala.');
 
     const jugadoresActualizados = [...sala.jugadores, nuevoJugador];
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseClient
         .from('salas')
         .update({ jugadores: jugadoresActualizados })
         .eq('id', sala.id);
@@ -205,10 +204,10 @@ function mostrarSalaEspera(codigo, categoria) {
  */
 function iniciarSuscripcionSala(codigo) {
     if (supabaseSubscription) {
-        supabase.removeChannel(supabaseSubscription);
+        supabaseClient.removeChannel(supabaseSubscription);
     }
 
-    supabaseSubscription = supabase
+    supabaseSubscription = supabaseClient
         .channel(`sala-${codigo}`)
         .on('postgres_changes', 
             { event: 'UPDATE', schema: 'public', table: 'salas', filter: `codigo=eq.${codigo}` }, 
@@ -285,7 +284,7 @@ async function iniciarJuegoHost() {
     }));
     
     // 3. Actualizar el estado en Supabase
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from('salas')
         .update({
             estado: 'EN_JUEGO',
@@ -331,7 +330,6 @@ function asignarRolLocal(temaGlobal, jugadores) {
             clearInterval(interval);
             mostrarPanel('juego');
             document.getElementById('juego-categoria-display').textContent = salaActual.categoria.toUpperCase();
-            // Mostrar botón de votar solo al host (ejemplo)
             if (esHost) document.getElementById('btn-activar-voto').style.display = 'block';
         }
     }, 1000);
