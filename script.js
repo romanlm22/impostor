@@ -257,10 +257,14 @@ async function reiniciarRondaHost() {
     if (error) alert("Error al reiniciar ronda");
 }
 
+/**
+ * Asigna el rol al jugador localmente (activado por el evento Realtime).
+ */
 function asignarRolLocal(temaGlobal, jugadores) {
     const miJugador = jugadores.find(j => j.nombre === nombreJugador); 
     if (!miJugador) return;
 
+    // 1. Mostrar pantalla de Rol
     mostrarPanel('rol');
     
     const rolCard = document.getElementById('rol-asignado');
@@ -268,34 +272,49 @@ function asignarRolLocal(temaGlobal, jugadores) {
     const rolInstr = document.getElementById('rol-instruccion');
     const cuentaReg = document.getElementById('cuenta-regresiva-rol');
 
+    // 2. Configurar textos y colores
     if (miJugador.rol === 'IMPOSTOR') {
         rolNombre.textContent = "¡IMPOSTOR!";
-        rolInstr.textContent = "¡Disimula! No conoces la palabra.";
+        rolInstr.textContent = "🤫 Shhh... No conoces la palabra.";
         rolCard.className = 'card impostor-rol';
     } else {
         rolNombre.textContent = temaGlobal.toUpperCase();
-        rolInstr.textContent = "¡Conoces la palabra! Descubre al mentiroso.";
+        rolInstr.textContent = "Conoces la palabra secreta.";
         rolCard.className = 'card normal-rol';
     }
 
-    let countdown = 5;
+    // 3. TRANSICIÓN RÁPIDA (Aquí está el cambio)
+    // Cambiamos el tiempo a solo 2 segundos para que sea casi inmediato
+    let countdown = 2; 
+
+    cuentaReg.textContent = "El juego comienza enseguida...";
+
     const interval = setInterval(() => {
-        cuentaReg.textContent = `El juego comienza en ${countdown}...`;
         countdown--;
-        if (countdown < 0) {
+        if (countdown <= 0) {
             clearInterval(interval);
+            
+            // 4. Mostrar Pantalla de Juego
             mostrarPanel('juego');
+            
+            // Mostrar la categoría en la pantalla de juego
             document.getElementById('juego-categoria-display').textContent = salaActual.categoria.toUpperCase();
             
-            // Mostrar controles SOLO si es Host
+            // 5. Mostrar controles SOLO si eres el Host
             if (esHost) {
-                document.getElementById('btn-reiniciar').style.display = 'block';
-                // document.getElementById('btn-activar-voto').style.display = 'block';
+                const btnReiniciar = document.getElementById('btn-reiniciar');
+                if (btnReiniciar) btnReiniciar.style.display = 'block';
+                
+                // Opcional: Mostrar botón de votación
+                const btnVoto = document.getElementById('btn-activar-voto');
+                if (btnVoto) btnVoto.style.display = 'block';
             } else {
-                document.getElementById('btn-reiniciar').style.display = 'none';
+                // Asegurar que estén ocultos para los demás
+                const btnReiniciar = document.getElementById('btn-reiniciar');
+                if (btnReiniciar) btnReiniciar.style.display = 'none';
             }
         }
-    }, 1000);
+    }, 1000); // Se actualiza cada 1 segundo
 }
 
 // =========================================================

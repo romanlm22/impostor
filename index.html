@@ -45,6 +45,7 @@
             <button onclick="unirseSala()">Confirmar y Unirse</button>
             <button class="secondary" onclick="mostrarPanelInicio()">Volver</button>
         </div>
+
         <div class="panel hidden" id="sala-pantalla">
             <h2>Sala: <span id="codigo-sala-display">...</span></h2>
             <p id="categoria-sala-display"></p>
@@ -66,9 +67,10 @@
                 <h3 id="rol-nombre"></h3>
                 <p id="rol-instruccion"></p>
             </div>
-            <p class="instruccion-rol">Memoriza tu rol. El juego comenzará automáticamente.</p>
-
-                    <div class="panel hidden" id="juego-pantalla">
+            <p class="instruccion-rol" id="cuenta-regresiva-rol">Memoriza tu rol...</p>
+        </div>
+        
+        <div class="panel hidden" id="juego-pantalla">
             <h2>Debate en Curso 🗣️</h2>
             <div class="timer">Tiempo restante: <span id="timer-display">5:00</span></div>
             <p>La categoría es: <strong id="juego-categoria-display"></strong></p>
@@ -77,12 +79,9 @@
             <button class="secondary" onclick="activarVotacion()" id="btn-activar-voto" style="display: none;">Activar Votación</button>
 
             <button onclick="reiniciarRondaHost()" id="btn-reiniciar" style="display: none; margin-top: 10px; background-color: #f39c12; color: white;">
-        🔄 Jugar Otra Ronda
-    </button>
-    
+                🔄 Jugar Otra Ronda
+            </button>
         </div>
-        </div>
-        
 
     </div>
 
