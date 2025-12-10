@@ -280,7 +280,7 @@ function actualizarListaJugadores(jugadores) {
     });
     document.getElementById('count-jugadores').textContent = jugadores.length;
     const btnIniciar = document.getElementById('iniciar-juego-btn');
-    if (btnIniciar) btnIniciar.style.display = (esHost && jugadores.length >= 4) ? 'block' : 'none';
+    if (btnIniciar) btnIniciar.style.display = (esHost && jugadores.length >= 3) ? 'block' : 'none';
 }
 
 function actualizarListaOrdenJuego(jugadores) {
@@ -317,7 +317,7 @@ function mezclarArray(array) {
 
 // --- 1. INICIAR EL JUEGO (REPARTO DE ROLES) ---
 async function iniciarJuegoHost() {
-    if (salaActual.jugadores.length < 4) return alert("Mínimo 4 jugadores.");
+    if (salaActual.jugadores.length < 3) return alert("Mínimo 3 jugadores.");
     
     const temas = data[salaActual.categoria]; 
     const tema = temas[Math.floor(Math.random() * temas.length)];
