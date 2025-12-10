@@ -10,13 +10,15 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const data = {
     futbol: ["maradona", "pele", "Messi", "Cristiano Ronaldo", "Neymar", "Zidane", "Mbappé", "Ronaldinho"],
     deportes: ["Tenis", "Baloncesto", "Nado", "Maratón", "Boxeo", "Golf", "Rugby"],
-    trabajos: ["Director", "Cartero", "Chef", "Arquitecto", "Veterinario", "Programador", "Dentista"],
+    trabajos: ["Director de cine", "Cartero", "Chef", "Arquitecto", "Veterinario", "Programador", "Dentista"],
     comida: ["Sopa", "Sushi", "Taco Mexicano", "Pizza Napolitana", "Hamburguesa", "chipa", "empanada"],
     aleatorio: ["Arcoíris", "Montaña Rusa", "Telescopio", "Pirámide", "Canguro", "Robot", "Globo Aerostático", "Castillo de Arena", "asado", "bicicleta", "computadora", "guitarra", "helado", "jardín", "lago", "museo", "nube", "ópera", "parque", "queso", "robot", "safari", "tren", "universo", "volcán", "pizza", "hamburguesa", "yogurt", "camionjeta", "automóvil", "messi", "tenis", "chef", "sushi", "san martin", "delfin", "elefante", "belgrano", "duki", "paulo londra", "madonna"],
     vehiculos: ["Automóvil", "Motocicleta", "Bicicleta", "Camión", "Avión", "Barco", "Tren"],
     animales: ["Elefante", "Tigre", "Canguro", "Delfín", "Águila", "Serpiente", "Jirafa"],
     famosos: ["Albert Einstein", "Marilyn Monroe", "Leonardo da Vinci", "Cleopatra", "William Shakespeare", "Frida Kahlo", "Brat Pit"],
     //delGrupo: ["FABRICIO O JOA", "BRUNO O TOBI", "ARMANDO O MARCOS", "JERE", "DANTE", "LOLO O JUAN", "JOACO O LISA", "MARIO O Lauty", "Francici o Fer", "MAURO"],
+    GrupoRoman: ["FABRICIO ", "BRUNO", "ARMANDO", "JERE", "DANTE", "LOLO", "JOACO", "MARIO", "Francici", "MAURO", "Juani"],
+    GrupoMaxi: ["Maxi", "Agustin", "ExE", "PINI", "GERMAN", "FABRI", "GUSTAVO", "JOEL"],
 };
 
 // --- ESTADO ---
@@ -25,7 +27,7 @@ let nombreJugador = '';
 let categoriaSeleccionada = '';
 let esHost = false;
 let supabaseSubscription = null;
-let timerInterval = null; // Para controlar el reloj
+let timerInterval = null; 
 
 // --- DOM ---
 const pantallas = {
@@ -151,7 +153,9 @@ async function unirseSala() {
 
     if (error || !sala) return alert('Sala no encontrada.');
     if (sala.estado !== 'ESPERA') return alert('La partida ya empezó.');
-    if (sala.jugadores.length >= 12) return alert('Sala llena.');
+    
+    // --- CAMBIO: LÍMITE SUBIDO A 12 JUGADORES ---
+    if (sala.jugadores.length >= 12) return alert('Sala llena (máx 12).');
 
     const yaExiste = sala.jugadores.some(j => j.nombre === nombreJugador);
     if(yaExiste) return alert('Nombre ya usado en esta sala.');
@@ -191,7 +195,6 @@ function volverAlInicio() {
     salaActual = null;
     esHost = false;
     mostrarPanel('inicio');
-    // Limpiar clases de victoria
     document.body.className = ''; 
     pantallas.victoria.className = 'panel hidden';
 }
@@ -241,17 +244,14 @@ function manejarCambioSala(nuevaSala) {
     actualizarListaJugadores(nuevaSala.jugadores);
     if (nuevaSala.categoria !== categoriaSeleccionada) actualizarDisplayCategoria(nuevaSala.categoria);
 
-    // MÁQUINA DE ESTADOS
     switch (nuevaSala.estado) {
         case 'ESPERA':
             mostrarPanel('sala');
-            document.body.className = ''; // Resetear fondo
+            document.body.className = ''; 
             break;
             
         case 'EN_JUEGO':
-            // Si estaba en espera o votando, ir al juego
             if (!pantallas.juego.classList.contains('hidden')) {
-                // Ya estoy en juego, solo actualizo lista vivos
                 actualizarListaOrdenJuego(nuevaSala.jugadores);
             } else {
                 asignarRolLocal(nuevaSala.tema, nuevaSala.jugadores, yo);
@@ -280,17 +280,14 @@ function actualizarListaJugadores(jugadores) {
     });
     document.getElementById('count-jugadores').textContent = jugadores.length;
     const btnIniciar = document.getElementById('iniciar-juego-btn');
-    if (btnIniciar) btnIniciar.style.display = (esHost && jugadores.length >= 3) ? 'block' : 'none';
+    if (btnIniciar) btnIniciar.style.display = (esHost && jugadores.length >= 4) ? 'block' : 'none';
 }
 
 function actualizarListaOrdenJuego(jugadores) {
     const listaOrden = document.getElementById('lista-orden-habla');
     if (!listaOrden) return;
     listaOrden.innerHTML = '';
-    
-    // Solo mostrar jugadores VIVOS
     const vivos = jugadores.filter(j => j.estado === 'VIVO');
-    
     vivos.forEach((j, index) => {
         const li = document.createElement('li');
         li.innerHTML = `<strong>${index + 1}.</strong> ${j.nombre}`;
@@ -320,21 +317,26 @@ function mezclarArray(array) {
 
 // --- 1. INICIAR EL JUEGO (REPARTO DE ROLES) ---
 async function iniciarJuegoHost() {
-    if (salaActual.jugadores.length < 3) return alert("Mínimo 3 jugadores.");
+    if (salaActual.jugadores.length < 4) return alert("Mínimo 4 jugadores.");
     
     const temas = data[salaActual.categoria]; 
     const tema = temas[Math.floor(Math.random() * temas.length)];
     
-    // REGLA: Hasta 5 jugadores -> 1 impostor. Más de 5 -> 2 impostores.
+    // --- CAMBIO: LÓGICA DE NÚMERO DE IMPOSTORES ---
     const numJugadores = salaActual.jugadores.length;
-    const numImpostores = numJugadores > 5 ? 2 : 1;
+    let numImpostores = 1;
+    
+    if (numJugadores > 5 && numJugadores <= 10) {
+        numImpostores = 2;
+    } else if (numJugadores >= 11) {
+        // A partir de 11 jugadores, 3 impostores
+        numImpostores = 3;
+    }
 
     let jugadoresMezclados = mezclarArray([...salaActual.jugadores]);
     
-    // Asignar roles
     const jugadoresAsignados = jugadoresMezclados.map(j => ({ ...j, rol: 'NORMAL', estado: 'VIVO' }));
     
-    // Elegir impostores al azar
     let asignados = 0;
     while (asignados < numImpostores) {
         const idx = Math.floor(Math.random() * jugadoresAsignados.length);
@@ -356,7 +358,6 @@ async function iniciarJuegoHost() {
 
 // --- 2. MOSTRAR PANTALLA JUEGO ---
 function asignarRolLocal(temaGlobal, jugadores, yo) {
-    // Si ya estoy viendo el juego, no reinicio la animación (útil tras votación sin eliminado final)
     if (!pantallas.juego.classList.contains('hidden') && !pantallas.rol.classList.contains('hidden')) return;
 
     if (yo.estado === 'ELIMINADO') {
@@ -404,18 +405,14 @@ function asignarRolLocal(temaGlobal, jugadores, yo) {
             actualizarListaOrdenJuego(jugadores);
             iniciarTimerVisual();
             
-            if (esHost) {
-                document.getElementById('btn-activar-voto').style.display = 'block';
-            } else {
-                document.getElementById('btn-activar-voto').style.display = 'none';
-            }
+            document.getElementById('btn-activar-voto').style.display = esHost ? 'block' : 'none';
         }
     }, 1000);
 }
 
 function iniciarTimerVisual() {
     if (timerInterval) clearInterval(timerInterval);
-    let tiempo = 60; // 1 MINUTO
+    let tiempo = 60; 
     const display = document.getElementById('timer-display');
     
     timerInterval = setInterval(() => {
@@ -441,8 +438,6 @@ function mostrarPantallaVotacion(jugadores) {
     const container = document.getElementById('lista-votar-jugadores');
     container.innerHTML = '';
     const instruccion = document.getElementById('instruccion-voto');
-
-    // Solo los vivos aparecen para ser votados
     const vivos = jugadores.filter(j => j.estado === 'VIVO');
 
     if (esHost) {
@@ -457,7 +452,6 @@ function mostrarPantallaVotacion(jugadores) {
             container.appendChild(div);
         });
         
-        // Botón para saltar votación (nadie expulsado)
         const btnSaltar = document.createElement('button');
         btnSaltar.textContent = "Saltar Votación (Nadie sale)";
         btnSaltar.style.marginTop = "15px";
@@ -469,41 +463,34 @@ function mostrarPantallaVotacion(jugadores) {
         vivos.forEach(j => {
             const div = document.createElement('div');
             div.className = 'btn-votar-jugador';
-            div.innerHTML = `<span>${j.nombre}</span>`; // Solo vista
+            div.innerHTML = `<span>${j.nombre}</span>`;
             container.appendChild(div);
         });
     }
 }
 
-// --- 4. EXPULSIÓN Y VERIFICACIÓN DE VICTORIA ---
+// --- 4. EXPULSIÓN Y VICTORIA ---
 async function ejecutarExpulsionHost(idVictima) {
     if (!esHost) return;
 
-    // 1. Marcar como ELIMINADO
     const nuevosJugadores = salaActual.jugadores.map(j => {
         if (j.id === idVictima) return { ...j, estado: 'ELIMINADO' };
         return j;
     });
 
-    // 2. CONTAR VIVOS
     const vivos = nuevosJugadores.filter(j => j.estado === 'VIVO');
     const impostoresVivos = vivos.filter(j => j.rol === 'IMPOSTOR').length;
     const inocentesVivos = vivos.filter(j => j.rol === 'NORMAL').length;
 
-    let nuevoEstado = 'EN_JUEGO'; // Por defecto sigue el juego
+    let nuevoEstado = 'EN_JUEGO'; 
 
-    // 3. REGLAS DE VICTORIA
-    // A. Ganan Inocentes: No quedan impostores
     if (impostoresVivos === 0) {
         nuevoEstado = 'VICTORIA_INOCENTE';
     } 
-    // B. Ganan Impostores: Quedan 2 jugadores y uno es impostor (1vs1 es imposible ganar debate)
-    // O si hay igual o más impostores que inocentes
     else if (impostoresVivos >= inocentesVivos) {
         nuevoEstado = 'VICTORIA_IMPOSTOR';
     }
 
-    // 4. ACTUALIZAR BD
     await supabaseClient
         .from('salas')
         .update({
@@ -515,7 +502,6 @@ async function ejecutarExpulsionHost(idVictima) {
 
 async function saltarVotacionHost() {
     if (!esHost) return;
-    // Volver al juego sin eliminar a nadie
     await supabaseClient.from('salas').update({ estado: 'EN_JUEGO' }).eq('id', salaActual.id);
 }
 
@@ -531,7 +517,6 @@ function mostrarPantallaVictoria(sala) {
     
     palabraFinal.textContent = sala.tema;
 
-    // Buscar nombres de impostores
     const nombresImpostores = sala.jugadores
         .filter(j => j.rol === 'IMPOSTOR')
         .map(j => j.nombre)
@@ -546,7 +531,7 @@ function mostrarPantallaVictoria(sala) {
         document.body.className = 'victoria-inocente';
     } else {
         titulo.textContent = "🔪 ¡GANAN LOS IMPOSTORES!";
-        subtitulo.textContent = "Tomaron el control de la sala.";
+        subtitulo.textContent = "Superaron en número a los ciudadanos.";
         panelVictoria.className = 'panel victoria-impostor';
         document.body.className = 'victoria-impostor';
     }
@@ -563,7 +548,6 @@ async function reiniciarRondaHost() {
         .eq('id', salaActual.id);
 }
 
-// Inicialización
 document.addEventListener('DOMContentLoaded', () => {
     cargarCategorias();
     mostrarPanel('inicio');
