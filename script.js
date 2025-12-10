@@ -4,10 +4,9 @@
 const SUPABASE_URL = 'https://hopszyankqfxxrkicmwk.supabase.co'; 
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhvcHN6eWFua3FmeHhya2ljbXdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyNDkwMTMsImV4cCI6MjA4MDgyNTAxM30.kU8e-aPLNj9kNuZewbpl4REsAN8VenNWBJpuLuAXw6s';
 
-// 1. CREACIÓN DEL CLIENTE
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// --- BASE DE DATOS DE TEMAS ---
+// --- DATOS ---
 const data = {
     futbol: ["maradona, pele", "Messi", "Cristiano Ronaldo", "Neymar", "Zidane", "Mbappé", "Ronaldinho"],
     deportes: ["Tenis", "Baloncesto", "Nado", "Maratón", "Boxeo", "Golf", "Rugby"],
@@ -20,16 +19,14 @@ const data = {
     //delGrupo: ["FABRICIO O JOA", "BRUNO O TOBI", "ARMANDO O MARCOS", "JERE", "DANTE", "LOLO O JUAN", "JOACO O LISA", "MARIO O Lauty", "Francici o Fer", "MAURO"],
 };
 
-// ====================================================
-// 2. VARIABLES DE ESTADO
-// ====================================================
+// --- ESTADO ---
 let salaActual = null;
 let nombreJugador = ''; 
 let categoriaSeleccionada = '';
 let esHost = false;
 let supabaseSubscription = null;
 
-// --- REFERENCIAS DEL DOM ---
+// --- DOM ---
 const pantallas = {
     inicio: document.getElementById('inicio-pantalla'),
     crear: document.getElementById('panel-crear'),
@@ -66,48 +63,41 @@ function mostrarPanelUnirse() {
     mostrarPanel('unirse');
 }
 
-/**
- * Carga las categorías tanto en el panel de crear como en la sala de espera.
- */
 function cargarCategorias() {
     const contenedorCrear = document.getElementById('select-categorias');
     const contenedorEspera = document.getElementById('categorias-sala-espera');
     
-    // Limpiamos
     contenedorCrear.innerHTML = '';
     contenedorEspera.innerHTML = '';
 
     Object.keys(data).forEach(key => {
-        // Botón para pantalla "Crear Sala"
         const btn1 = document.createElement('button');
         btn1.textContent = key.toUpperCase();
         btn1.classList.add('categoria-btn');
-        btn1.dataset.cat = key; // Marcador para estilos
+        btn1.dataset.cat = key; 
         btn1.onclick = () => seleccionarCategoriaLocal(key, btn1);
         contenedorCrear.appendChild(btn1);
 
-        // Botón para pantalla "Sala de Espera" (Solo Host lo usará)
         const btn2 = document.createElement('button');
         btn2.textContent = key.toUpperCase();
         btn2.classList.add('categoria-btn');
-        btn2.style.fontSize = '0.8em'; // Un poco más chicos en la sala
+        btn2.style.fontSize = '0.8em'; 
         btn2.style.padding = '5px';
         btn2.dataset.cat = key;
-        btn2.onclick = () => cambiarCategoriaHost(key); // Esta función actualiza la BD
+        btn2.onclick = () => cambiarCategoriaHost(key); 
         contenedorEspera.appendChild(btn2);
     });
 }
 
 function seleccionarCategoriaLocal(key, element) {
     categoriaSeleccionada = key;
-    // Quitamos 'selected' de todos los botones en el panel de crear
     const panelCrear = document.getElementById('select-categorias');
     panelCrear.querySelectorAll('.categoria-btn').forEach(btn => btn.classList.remove('selected'));
     element.classList.add('selected');
 }
 
 // =========================================================
-// II. GESTIÓN DE SALAS (SUPABASE)
+// II. GESTIÓN DE SALAS
 // =========================================================
 
 function generarCodigo() {
@@ -179,26 +169,45 @@ async function unirseSala() {
     iniciarSuscripcionSala(codigo);
 }
 
+// --- NUEVA FUNCIÓN: SALIR DE SALA ---
+async function salirDeSala() {
+    if (!salaActual) return;
+
+    if (confirm("¿Estás seguro de que quieres salir?")) {
+        
+        if (esHost) {
+            // Si el HOST sale, eliminamos la sala completa
+            await supabaseClient.from('salas').delete().eq('id', salaActual.id);
+        } else {
+            // Si un JUGADOR sale, actualizamos el array quitándolo
+            const nuevosJugadores = salaActual.jugadores.filter(j => j.nombre !== nombreJugador);
+            await supabaseClient.from('salas').update({ jugadores: nuevosJugadores }).eq('id', salaActual.id);
+        }
+
+        // Reseteo local
+        volverAlInicio();
+    }
+}
+
+// --- FUNCIÓN AUXILIAR: RESETEAR TODO ---
+function volverAlInicio() {
+    if (supabaseSubscription) supabaseClient.removeChannel(supabaseSubscription);
+    salaActual = null;
+    esHost = false;
+    mostrarPanel('inicio');
+}
+
 function mostrarSalaEspera(codigo, categoria) {
     mostrarPanel('sala');
     document.getElementById('codigo-sala-display').textContent = codigo;
     actualizarDisplayCategoria(categoria);
 
-    // Mostrar controles de cambio de categoría SOLO al Host
     const controlesHost = document.getElementById('host-controls-categoria');
-    if (esHost) {
-        controlesHost.style.display = 'block';
-    } else {
-        controlesHost.style.display = 'none';
-    }
+    controlesHost.style.display = esHost ? 'block' : 'none';
 }
 
-// Nueva función auxiliar para actualizar texto y botones visualmente
 function actualizarDisplayCategoria(categoria) {
-    // 1. Texto
     document.getElementById('categoria-sala-display').textContent = `Categoría Actual: ${categoria.toUpperCase()}`;
-    
-    // 2. Resaltar botón en la sala de espera (para el host)
     const container = document.getElementById('categorias-sala-espera');
     container.querySelectorAll('.categoria-btn').forEach(btn => {
         btn.classList.remove('selected');
@@ -206,13 +215,11 @@ function actualizarDisplayCategoria(categoria) {
             btn.classList.add('selected');
         }
     });
-    
-    // Guardamos localmente
     categoriaSeleccionada = categoria;
 }
 
 // =========================================================
-// III. REALTIME
+// III. REALTIME (ACTUALIZADO)
 // =========================================================
 
 function iniciarSuscripcionSala(codigo) {
@@ -220,10 +227,19 @@ function iniciarSuscripcionSala(codigo) {
 
     supabaseSubscription = supabaseClient
         .channel(`sala-${codigo}`)
+        // Escuchar UPDATES (Cambios en jugadores, estado, etc.)
         .on('postgres_changes', 
             { event: 'UPDATE', schema: 'public', table: 'salas', filter: `codigo=eq.${codigo}` }, 
             (payload) => {
                 manejarCambioSala(payload.new);
+            }
+        )
+        // Escuchar DELETES (Si el host cierra la sala)
+        .on('postgres_changes',
+            { event: 'DELETE', schema: 'public', table: 'salas', filter: `codigo=eq.${codigo}` },
+            (payload) => {
+                alert("El Host ha cerrado la sala.");
+                volverAlInicio();
             }
         )
         .subscribe();
@@ -232,18 +248,29 @@ function iniciarSuscripcionSala(codigo) {
 function manejarCambioSala(nuevaSala) {
     salaActual = nuevaSala;
     
-    // Actualizar lista de jugadores
+    // Verificar si me eliminaron (kick) o si hubo un error de sincronización
+    const sigoEnSala = nuevaSala.jugadores.some(j => j.nombre === nombreJugador);
+    if (!sigoEnSala) {
+        alert("Has salido de la sala.");
+        volverAlInicio();
+        return;
+    }
+
     actualizarListaJugadores(nuevaSala.jugadores);
 
-    // Detectar CAMBIO DE CATEGORÍA en tiempo real (si el host la cambia)
     if (nuevaSala.categoria !== categoriaSeleccionada) {
         actualizarDisplayCategoria(nuevaSala.categoria);
     }
 
     if (nuevaSala.estado === 'EN_JUEGO') {
-        asignarRolLocal(nuevaSala.tema, nuevaSala.jugadores);
+        // Solo llamar a asignarRol si aún no estoy en la pantalla de juego/rol
+        if (!pantallas.juego.classList.contains('hidden') || !pantallas.rol.classList.contains('hidden')) {
+            // Ya estoy en juego, solo actualizo lista si alguien salió
+             actualizarListaOrdenJuego(nuevaSala.jugadores);
+        } else {
+            asignarRolLocal(nuevaSala.tema, nuevaSala.jugadores);
+        }
     } else if (nuevaSala.estado === 'ESPERA') {
-        // Si volvemos a la sala
         mostrarPanel('sala');
         actualizarDisplayCategoria(nuevaSala.categoria);
     }
@@ -263,36 +290,54 @@ function actualizarListaJugadores(jugadores) {
     document.getElementById('count-jugadores').textContent = jugadores.length;
     
     const btnIniciar = document.getElementById('iniciar-juego-btn');
-    if (btnIniciar) btnIniciar.style.display = (esHost && jugadores.length >= 3) ? 'block' : 'none';
+    if (btnIniciar) btnIniciar.style.display = (esHost && jugadores.length >= 4) ? 'block' : 'none';
+}
+
+// Nueva función para actualizar la lista DURANTE el juego (si alguien se va)
+function actualizarListaOrdenJuego(jugadores) {
+    const listaOrden = document.getElementById('lista-orden-habla');
+    if (!listaOrden) return;
+    listaOrden.innerHTML = '';
+    jugadores.forEach((j, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<strong>${index + 1}.</strong> ${j.nombre}`;
+        if (j.nombre === nombreJugador) {
+            li.style.color = "#3498db";
+            li.style.fontWeight = "bold";
+            li.innerHTML += " (Tú)";
+        }
+        listaOrden.appendChild(li);
+    });
 }
 
 // =========================================================
 // IV. LÓGICA DEL JUEGO
 // =========================================================
 
-// --- NUEVA FUNCIÓN: HOST CAMBIA CATEGORÍA EN TIEMPO REAL ---
 async function cambiarCategoriaHost(nuevaCat) {
     if (!esHost) return;
-    
-    // Enviamos el update a Supabase
-    // Esto disparará 'manejarCambioSala' en todos los clientes
-    const { error } = await supabaseClient
-        .from('salas')
-        .update({ categoria: nuevaCat })
-        .eq('id', salaActual.id);
-        
+    const { error } = await supabaseClient.from('salas').update({ categoria: nuevaCat }).eq('id', salaActual.id);
     if (error) console.error("Error al cambiar categoría", error);
 }
 
+function mezclarArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
 async function iniciarJuegoHost() {
-    if (salaActual.jugadores.length < 3) return alert("Mínimo 3 jugadores.");
+    if (salaActual.jugadores.length < 4) return alert("Mínimo 4 jugadores.");
     
-    // Usamos la categoría que esté guardada actualmente en salaActual (que viene de la BD)
     const temas = data[salaActual.categoria]; 
     const tema = temas[Math.floor(Math.random() * temas.length)];
-    const impostorIndex = Math.floor(Math.random() * salaActual.jugadores.length);
     
-    const jugadoresAsignados = salaActual.jugadores.map((j, index) => ({
+    let jugadoresMezclados = mezclarArray([...salaActual.jugadores]);
+    const impostorIndex = Math.floor(Math.random() * jugadoresMezclados.length);
+    
+    const jugadoresAsignados = jugadoresMezclados.map((j, index) => ({
         ...j,
         rol: (index === impostorIndex) ? 'IMPOSTOR' : 'NORMAL'
     }));
@@ -302,27 +347,17 @@ async function iniciarJuegoHost() {
         .update({
             estado: 'EN_JUEGO',
             tema: tema,
-            jugadores: jugadoresAsignados
+            jugadores: jugadoresAsignados 
         })
         .eq('id', salaActual.id);
 }
 
 async function reiniciarRondaHost() {
-    const jugadoresReset = salaActual.jugadores.map(j => ({
-        ...j,
-        rol: 'PENDIENTE'
-    }));
-
-    const { error } = await supabaseClient
+    const jugadoresReset = salaActual.jugadores.map(j => ({ ...j, rol: 'PENDIENTE' }));
+    await supabaseClient
         .from('salas')
-        .update({
-            estado: 'ESPERA',
-            tema: '', 
-            jugadores: jugadoresReset
-        })
+        .update({ estado: 'ESPERA', tema: '', jugadores: jugadoresReset })
         .eq('id', salaActual.id);
-
-    if (error) alert("Error al reiniciar ronda");
 }
 
 function asignarRolLocal(temaGlobal, jugadores) {
@@ -346,7 +381,7 @@ function asignarRolLocal(temaGlobal, jugadores) {
         rolCard.className = 'card normal-rol';
     }
 
-    let countdown = 35; // Transición rápida de 2 segundos
+    let countdown = 2; 
     cuentaReg.textContent = "El juego comienza enseguida...";
 
     const interval = setInterval(() => {
@@ -354,12 +389,21 @@ function asignarRolLocal(temaGlobal, jugadores) {
         if (countdown <= 0) {
             clearInterval(interval);
             mostrarPanel('juego');
-            document.getElementById('juego-categoria-display').textContent = salaActual.categoria.toUpperCase();
+
+            const palabraDisplay = document.getElementById('palabra-clave-visible');
+            if (miJugador.rol === 'IMPOSTOR') {
+                palabraDisplay.textContent = "ERES EL IMPOSTOR";
+                palabraDisplay.style.color = "#e74c3c"; 
+            } else {
+                palabraDisplay.textContent = temaGlobal.toUpperCase();
+                palabraDisplay.style.color = "#2ecc71"; 
+            }
+
+            actualizarListaOrdenJuego(jugadores);
             
             if (esHost) {
                 const btnReiniciar = document.getElementById('btn-reiniciar');
                 if (btnReiniciar) btnReiniciar.style.display = 'block';
-                
                 const btnVoto = document.getElementById('btn-activar-voto');
                 if (btnVoto) btnVoto.style.display = 'block';
             } else {
@@ -369,10 +413,6 @@ function asignarRolLocal(temaGlobal, jugadores) {
         }
     }, 1000);
 }
-
-// =========================================================
-// V. INICIALIZACIÓN
-// =========================================================
 
 document.addEventListener('DOMContentLoaded', () => {
     cargarCategorias();

@@ -184,3 +184,15 @@ button {
     color: #666;
     margin-top: 15px;
 }
+
+/* Botón de Salir (Rojo) */
+.btn-salir {
+    background-color: #e74c3c; /* Rojo */
+    color: white;
+    margin-top: 15px;
+    font-size: 0.9em;
+}
+
+.btn-salir:hover {
+    background-color: #c0392b;
+}

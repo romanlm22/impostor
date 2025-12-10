@@ -48,23 +48,24 @@
 
         <div class="panel hidden" id="sala-pantalla">
             <h2>Sala: <span id="codigo-sala-display" class="highlight">...</span></h2>
-            
             <p id="categoria-sala-display" style="font-size: 1.2em; font-weight: bold; color: #3498db;"></p>
             
             <div id="host-controls-categoria" style="display: none; margin: 15px 0; border-top: 1px solid #ddd; padding-top: 10px;">
-                <p style="font-size: 0.9em; color: #666;">Cambiar Categoría para la próxima ronda:</p>
-                <div class="categorias" id="categorias-sala-espera">
-                    </div>
+                <p style="font-size: 0.9em; color: #666;">Cambiar Categoría:</p>
+                <div class="categorias" id="categorias-sala-espera"></div>
             </div>
 
             <div class="jugadores-list">
                 <h3>Jugadores (<span id="count-jugadores">0</span>/10):</h3>
-                <ul id="lista-jugadores">
-                    </ul>
+                <ul id="lista-jugadores"></ul>
             </div>
             
             <button id="iniciar-juego-btn" onclick="iniciarJuegoHost()" style="display: none;">
                 <i class="fas fa-play"></i> Iniciar Partida
+            </button>
+
+            <button onclick="salirDeSala()" class="btn-salir">
+                <i class="fas fa-sign-out-alt"></i> Salir de la Sala
             </button>
         </div>
 
@@ -78,13 +79,22 @@
         </div>
         
         <div class="panel hidden" id="juego-pantalla">
-            <h2>Debate en Curso 🗣️</h2>
+            <p style="margin-bottom: 5px; color: #888;">Tu palabra es:</p>
+            <h1 id="palabra-clave-visible" style="margin-top: 0; font-size: 2.5em; text-transform: uppercase;">...</h1>
+            <hr>
+            <h3>🗣️ Orden de Habla:</h3>
+            <ul id="lista-orden-habla" style="text-align: left; padding-left: 20px; margin-bottom: 20px;"></ul>
+
             <div class="timer">Tiempo restante: <span id="timer-display">5:00</span></div>
-            <p>La categoría es: <strong id="juego-categoria-display"></strong></p>
-            <p class="instruccion">Intenten descubrir al impostor sin revelar la palabra secreta.</p>
             
+            <button class="secondary" onclick="activarVotacion()" id="btn-activar-voto" style="display: none;">Activar Votación</button>
+
             <button onclick="reiniciarRondaHost()" id="btn-reiniciar" style="display: none; margin-top: 10px; background-color: #f39c12; color: white;">
                 🔄 Jugar Otra Ronda
+            </button>
+
+            <button onclick="salirDeSala()" class="btn-salir" style="margin-top: 20px;">
+                <i class="fas fa-sign-out-alt"></i> Abandonar Partida
             </button>
         </div>
 
