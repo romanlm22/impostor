@@ -196,3 +196,46 @@ button {
 .btn-salir:hover {
     background-color: #c0392b;
 }
+
+/* Estilos de Votación */
+.grid-votos {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn-votar-jugador {
+    background-color: #ecf0f1;
+    color: #333;
+    border: 2px solid #bdc3c7;
+    padding: 15px;
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.btn-votar-jugador:hover {
+    background-color: #ffeaa7;
+    border-color: #f1c40f;
+}
+
+.btn-eliminar-accion {
+    background-color: #e74c3c;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 0.8em;
+    cursor: pointer;
+}
+
+/* Estilos de Victoria */
+.victoria-impostor {
+    background-color: #e74c3c !important; /* Fondo Rojo */
+    color: white;
+}
+.victoria-inocente {
+    background-color: #2ecc71 !important; /* Fondo Verde */
+    color: white;
+}

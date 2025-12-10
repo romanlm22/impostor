@@ -25,6 +25,7 @@ let nombreJugador = '';
 let categoriaSeleccionada = '';
 let esHost = false;
 let supabaseSubscription = null;
+let timerInterval = null; // Para controlar el reloj
 
 // --- DOM ---
 const pantallas = {
@@ -33,7 +34,9 @@ const pantallas = {
     unirse: document.getElementById('panel-unirse'),
     sala: document.getElementById('sala-pantalla'),
     rol: document.getElementById('rol-pantalla'),
-    juego: document.getElementById('juego-pantalla')
+    juego: document.getElementById('juego-pantalla'),
+    votacion: document.getElementById('votacion-pantalla'),
+    victoria: document.getElementById('victoria-pantalla')
 };
 
 // =========================================================
@@ -117,7 +120,7 @@ async function crearSala() {
             estado: 'ESPERA',
             categoria: categoriaSeleccionada,
             tema: '', 
-            jugadores: [{ id: jugadorId, nombre: nombreJugador, esHost: true, rol: 'PENDIENTE' }]
+            jugadores: [{ id: jugadorId, nombre: nombreJugador, esHost: true, rol: 'PENDIENTE', estado: 'VIVO' }]
         })
         .select()
         .single();
@@ -153,7 +156,7 @@ async function unirseSala() {
     const yaExiste = sala.jugadores.some(j => j.nombre === nombreJugador);
     if(yaExiste) return alert('Nombre ya usado en esta sala.');
 
-    const nuevoJugador = { id: jugadorId, nombre: nombreJugador, esHost: false, rol: 'PENDIENTE' };
+    const nuevoJugador = { id: jugadorId, nombre: nombreJugador, esHost: false, rol: 'PENDIENTE', estado: 'VIVO' };
     const jugadoresActualizados = [...sala.jugadores, nuevoJugador];
 
     const { error: updateError } = await supabaseClient
@@ -169,41 +172,35 @@ async function unirseSala() {
     iniciarSuscripcionSala(codigo);
 }
 
-// --- NUEVA FUNCIÓN: SALIR DE SALA ---
 async function salirDeSala() {
     if (!salaActual) return;
-
-    if (confirm("¿Estás seguro de que quieres salir?")) {
-        
+    if (confirm("¿Seguro que quieres salir?")) {
         if (esHost) {
-            // Si el HOST sale, eliminamos la sala completa
             await supabaseClient.from('salas').delete().eq('id', salaActual.id);
         } else {
-            // Si un JUGADOR sale, actualizamos el array quitándolo
             const nuevosJugadores = salaActual.jugadores.filter(j => j.nombre !== nombreJugador);
             await supabaseClient.from('salas').update({ jugadores: nuevosJugadores }).eq('id', salaActual.id);
         }
-
-        // Reseteo local
         volverAlInicio();
     }
 }
 
-// --- FUNCIÓN AUXILIAR: RESETEAR TODO ---
 function volverAlInicio() {
     if (supabaseSubscription) supabaseClient.removeChannel(supabaseSubscription);
+    if (timerInterval) clearInterval(timerInterval);
     salaActual = null;
     esHost = false;
     mostrarPanel('inicio');
+    // Limpiar clases de victoria
+    document.body.className = ''; 
+    pantallas.victoria.className = 'panel hidden';
 }
 
 function mostrarSalaEspera(codigo, categoria) {
     mostrarPanel('sala');
     document.getElementById('codigo-sala-display').textContent = codigo;
     actualizarDisplayCategoria(categoria);
-
-    const controlesHost = document.getElementById('host-controls-categoria');
-    controlesHost.style.display = esHost ? 'block' : 'none';
+    document.getElementById('host-controls-categoria').style.display = esHost ? 'block' : 'none';
 }
 
 function actualizarDisplayCategoria(categoria) {
@@ -211,15 +208,13 @@ function actualizarDisplayCategoria(categoria) {
     const container = document.getElementById('categorias-sala-espera');
     container.querySelectorAll('.categoria-btn').forEach(btn => {
         btn.classList.remove('selected');
-        if (btn.dataset.cat === categoria) {
-            btn.classList.add('selected');
-        }
+        if (btn.dataset.cat === categoria) btn.classList.add('selected');
     });
     categoriaSeleccionada = categoria;
 }
 
 // =========================================================
-// III. REALTIME (ACTUALIZADO)
+// III. REALTIME
 // =========================================================
 
 function iniciarSuscripcionSala(codigo) {
@@ -227,84 +222,80 @@ function iniciarSuscripcionSala(codigo) {
 
     supabaseSubscription = supabaseClient
         .channel(`sala-${codigo}`)
-        // Escuchar UPDATES (Cambios en jugadores, estado, etc.)
         .on('postgres_changes', 
             { event: 'UPDATE', schema: 'public', table: 'salas', filter: `codigo=eq.${codigo}` }, 
-            (payload) => {
-                manejarCambioSala(payload.new);
-            }
+            (payload) => manejarCambioSala(payload.new)
         )
-        // Escuchar DELETES (Si el host cierra la sala)
         .on('postgres_changes',
             { event: 'DELETE', schema: 'public', table: 'salas', filter: `codigo=eq.${codigo}` },
-            (payload) => {
-                alert("El Host ha cerrado la sala.");
-                volverAlInicio();
-            }
+            () => { alert("El Host cerró la sala."); volverAlInicio(); }
         )
         .subscribe();
 }
 
 function manejarCambioSala(nuevaSala) {
     salaActual = nuevaSala;
-    
-    // Verificar si me eliminaron (kick) o si hubo un error de sincronización
-    const sigoEnSala = nuevaSala.jugadores.some(j => j.nombre === nombreJugador);
-    if (!sigoEnSala) {
-        alert("Has salido de la sala.");
-        volverAlInicio();
-        return;
-    }
+    const yo = nuevaSala.jugadores.find(j => j.nombre === nombreJugador);
+    if (!yo) { alert("Has salido de la sala."); volverAlInicio(); return; }
 
     actualizarListaJugadores(nuevaSala.jugadores);
+    if (nuevaSala.categoria !== categoriaSeleccionada) actualizarDisplayCategoria(nuevaSala.categoria);
 
-    if (nuevaSala.categoria !== categoriaSeleccionada) {
-        actualizarDisplayCategoria(nuevaSala.categoria);
-    }
+    // MÁQUINA DE ESTADOS
+    switch (nuevaSala.estado) {
+        case 'ESPERA':
+            mostrarPanel('sala');
+            document.body.className = ''; // Resetear fondo
+            break;
+            
+        case 'EN_JUEGO':
+            // Si estaba en espera o votando, ir al juego
+            if (!pantallas.juego.classList.contains('hidden')) {
+                // Ya estoy en juego, solo actualizo lista vivos
+                actualizarListaOrdenJuego(nuevaSala.jugadores);
+            } else {
+                asignarRolLocal(nuevaSala.tema, nuevaSala.jugadores, yo);
+            }
+            break;
 
-    if (nuevaSala.estado === 'EN_JUEGO') {
-        // Solo llamar a asignarRol si aún no estoy en la pantalla de juego/rol
-        if (!pantallas.juego.classList.contains('hidden') || !pantallas.rol.classList.contains('hidden')) {
-            // Ya estoy en juego, solo actualizo lista si alguien salió
-             actualizarListaOrdenJuego(nuevaSala.jugadores);
-        } else {
-            asignarRolLocal(nuevaSala.tema, nuevaSala.jugadores);
-        }
-    } else if (nuevaSala.estado === 'ESPERA') {
-        mostrarPanel('sala');
-        actualizarDisplayCategoria(nuevaSala.categoria);
+        case 'VOTANDO':
+            mostrarPantallaVotacion(nuevaSala.jugadores);
+            break;
+
+        case 'VICTORIA_IMPOSTOR':
+        case 'VICTORIA_INOCENTE':
+            mostrarPantallaVictoria(nuevaSala);
+            break;
     }
 }
 
 function actualizarListaJugadores(jugadores) {
     const lista = document.getElementById('lista-jugadores');
     if (!lista) return;
-
     lista.innerHTML = '';
     jugadores.forEach(j => {
         const li = document.createElement('li');
         li.innerHTML = `<span>${j.nombre}</span> <span style="font-size:0.8em; color:#aaa;">${j.esHost ? '👑' : ''}</span>`;
         lista.appendChild(li);
     });
-
     document.getElementById('count-jugadores').textContent = jugadores.length;
-    
     const btnIniciar = document.getElementById('iniciar-juego-btn');
-    if (btnIniciar) btnIniciar.style.display = (esHost && jugadores.length >= 3) ? 'block' : 'none';
+    if (btnIniciar) btnIniciar.style.display = (esHost && jugadores.length >= 4) ? 'block' : 'none';
 }
 
-// Nueva función para actualizar la lista DURANTE el juego (si alguien se va)
 function actualizarListaOrdenJuego(jugadores) {
     const listaOrden = document.getElementById('lista-orden-habla');
     if (!listaOrden) return;
     listaOrden.innerHTML = '';
-    jugadores.forEach((j, index) => {
+    
+    // Solo mostrar jugadores VIVOS
+    const vivos = jugadores.filter(j => j.estado === 'VIVO');
+    
+    vivos.forEach((j, index) => {
         const li = document.createElement('li');
         li.innerHTML = `<strong>${index + 1}.</strong> ${j.nombre}`;
         if (j.nombre === nombreJugador) {
-            li.style.color = "#3498db";
-            li.style.fontWeight = "bold";
-            li.innerHTML += " (Tú)";
+            li.style.color = "#3498db"; li.style.fontWeight = "bold"; li.innerHTML += " (Tú)";
         }
         listaOrden.appendChild(li);
     });
@@ -316,8 +307,7 @@ function actualizarListaOrdenJuego(jugadores) {
 
 async function cambiarCategoriaHost(nuevaCat) {
     if (!esHost) return;
-    const { error } = await supabaseClient.from('salas').update({ categoria: nuevaCat }).eq('id', salaActual.id);
-    if (error) console.error("Error al cambiar categoría", error);
+    await supabaseClient.from('salas').update({ categoria: nuevaCat }).eq('id', salaActual.id);
 }
 
 function mezclarArray(array) {
@@ -328,19 +318,31 @@ function mezclarArray(array) {
     return array;
 }
 
+// --- 1. INICIAR EL JUEGO (REPARTO DE ROLES) ---
 async function iniciarJuegoHost() {
-    if (salaActual.jugadores.length < 3) return alert("Mínimo 3 jugadores.");
+    if (salaActual.jugadores.length < 4) return alert("Mínimo 4 jugadores.");
     
     const temas = data[salaActual.categoria]; 
     const tema = temas[Math.floor(Math.random() * temas.length)];
     
+    // REGLA: Hasta 5 jugadores -> 1 impostor. Más de 5 -> 2 impostores.
+    const numJugadores = salaActual.jugadores.length;
+    const numImpostores = numJugadores > 5 ? 2 : 1;
+
     let jugadoresMezclados = mezclarArray([...salaActual.jugadores]);
-    const impostorIndex = Math.floor(Math.random() * jugadoresMezclados.length);
     
-    const jugadoresAsignados = jugadoresMezclados.map((j, index) => ({
-        ...j,
-        rol: (index === impostorIndex) ? 'IMPOSTOR' : 'NORMAL'
-    }));
+    // Asignar roles
+    const jugadoresAsignados = jugadoresMezclados.map(j => ({ ...j, rol: 'NORMAL', estado: 'VIVO' }));
+    
+    // Elegir impostores al azar
+    let asignados = 0;
+    while (asignados < numImpostores) {
+        const idx = Math.floor(Math.random() * jugadoresAsignados.length);
+        if (jugadoresAsignados[idx].rol !== 'IMPOSTOR') {
+            jugadoresAsignados[idx].rol = 'IMPOSTOR';
+            asignados++;
+        }
+    }
     
     await supabaseClient
         .from('salas')
@@ -352,26 +354,26 @@ async function iniciarJuegoHost() {
         .eq('id', salaActual.id);
 }
 
-async function reiniciarRondaHost() {
-    const jugadoresReset = salaActual.jugadores.map(j => ({ ...j, rol: 'PENDIENTE' }));
-    await supabaseClient
-        .from('salas')
-        .update({ estado: 'ESPERA', tema: '', jugadores: jugadoresReset })
-        .eq('id', salaActual.id);
-}
+// --- 2. MOSTRAR PANTALLA JUEGO ---
+function asignarRolLocal(temaGlobal, jugadores, yo) {
+    // Si ya estoy viendo el juego, no reinicio la animación (útil tras votación sin eliminado final)
+    if (!pantallas.juego.classList.contains('hidden') && !pantallas.rol.classList.contains('hidden')) return;
 
-function asignarRolLocal(temaGlobal, jugadores) {
-    const miJugador = jugadores.find(j => j.nombre === nombreJugador); 
-    if (!miJugador) return;
+    if (yo.estado === 'ELIMINADO') {
+        mostrarPanel('juego');
+        document.getElementById('palabra-clave-visible').textContent = "HAS SIDO ELIMINADO 👻";
+        document.getElementById('timer-display').textContent = "--:--";
+        return;
+    }
 
     mostrarPanel('rol');
     
-    const rolCard = document.getElementById('rol-asignado');
     const rolNombre = document.getElementById('rol-nombre');
     const rolInstr = document.getElementById('rol-instruccion');
     const cuentaReg = document.getElementById('cuenta-regresiva-rol');
+    const rolCard = document.getElementById('rol-asignado');
 
-    if (miJugador.rol === 'IMPOSTOR') {
+    if (yo.rol === 'IMPOSTOR') {
         rolNombre.textContent = "¡IMPOSTOR!";
         rolInstr.textContent = "🤫 Shhh... No conoces la palabra.";
         rolCard.className = 'card impostor-rol';
@@ -382,7 +384,7 @@ function asignarRolLocal(temaGlobal, jugadores) {
     }
 
     let countdown = 2; 
-    cuentaReg.textContent = "El juego comienza enseguida...";
+    cuentaReg.textContent = "El juego comienza...";
 
     const interval = setInterval(() => {
         countdown--;
@@ -391,7 +393,7 @@ function asignarRolLocal(temaGlobal, jugadores) {
             mostrarPanel('juego');
 
             const palabraDisplay = document.getElementById('palabra-clave-visible');
-            if (miJugador.rol === 'IMPOSTOR') {
+            if (yo.rol === 'IMPOSTOR') {
                 palabraDisplay.textContent = "ERES EL IMPOSTOR";
                 palabraDisplay.style.color = "#e74c3c"; 
             } else {
@@ -400,20 +402,168 @@ function asignarRolLocal(temaGlobal, jugadores) {
             }
 
             actualizarListaOrdenJuego(jugadores);
+            iniciarTimerVisual();
             
             if (esHost) {
-                const btnReiniciar = document.getElementById('btn-reiniciar');
-                if (btnReiniciar) btnReiniciar.style.display = 'block';
-                const btnVoto = document.getElementById('btn-activar-voto');
-                if (btnVoto) btnVoto.style.display = 'block';
+                document.getElementById('btn-activar-voto').style.display = 'block';
             } else {
-                const btnReiniciar = document.getElementById('btn-reiniciar');
-                if (btnReiniciar) btnReiniciar.style.display = 'none';
+                document.getElementById('btn-activar-voto').style.display = 'none';
             }
         }
     }, 1000);
 }
 
+function iniciarTimerVisual() {
+    if (timerInterval) clearInterval(timerInterval);
+    let tiempo = 60; // 1 MINUTO
+    const display = document.getElementById('timer-display');
+    
+    timerInterval = setInterval(() => {
+        tiempo--;
+        let min = Math.floor(tiempo / 60);
+        let sec = tiempo % 60;
+        display.textContent = `${min}:${sec < 10 ? '0' : ''}${sec}`;
+        
+        if (tiempo <= 0) clearInterval(timerInterval);
+    }, 1000);
+}
+
+// --- 3. VOTACIÓN ---
+async function activarFaseVotacionHost() {
+    if (!esHost) return;
+    await supabaseClient.from('salas').update({ estado: 'VOTANDO' }).eq('id', salaActual.id);
+}
+
+function mostrarPantallaVotacion(jugadores) {
+    mostrarPanel('votacion');
+    if (timerInterval) clearInterval(timerInterval);
+    
+    const container = document.getElementById('lista-votar-jugadores');
+    container.innerHTML = '';
+    const instruccion = document.getElementById('instruccion-voto');
+
+    // Solo los vivos aparecen para ser votados
+    const vivos = jugadores.filter(j => j.estado === 'VIVO');
+
+    if (esHost) {
+        instruccion.textContent = "HOST: Pregunta los votos y haz clic en 'EXPULSAR' al elegido.";
+        vivos.forEach(j => {
+            const div = document.createElement('div');
+            div.className = 'btn-votar-jugador';
+            div.innerHTML = `
+                <span>${j.nombre}</span>
+                <button class="btn-eliminar-accion" onclick="ejecutarExpulsionHost('${j.id}')">EXPULSAR 💀</button>
+            `;
+            container.appendChild(div);
+        });
+        
+        // Botón para saltar votación (nadie expulsado)
+        const btnSaltar = document.createElement('button');
+        btnSaltar.textContent = "Saltar Votación (Nadie sale)";
+        btnSaltar.style.marginTop = "15px";
+        btnSaltar.onclick = () => saltarVotacionHost();
+        container.appendChild(btnSaltar);
+
+    } else {
+        instruccion.textContent = "El Host registrará los votos. ¡Defiéndete!";
+        vivos.forEach(j => {
+            const div = document.createElement('div');
+            div.className = 'btn-votar-jugador';
+            div.innerHTML = `<span>${j.nombre}</span>`; // Solo vista
+            container.appendChild(div);
+        });
+    }
+}
+
+// --- 4. EXPULSIÓN Y VERIFICACIÓN DE VICTORIA ---
+async function ejecutarExpulsionHost(idVictima) {
+    if (!esHost) return;
+
+    // 1. Marcar como ELIMINADO
+    const nuevosJugadores = salaActual.jugadores.map(j => {
+        if (j.id === idVictima) return { ...j, estado: 'ELIMINADO' };
+        return j;
+    });
+
+    // 2. CONTAR VIVOS
+    const vivos = nuevosJugadores.filter(j => j.estado === 'VIVO');
+    const impostoresVivos = vivos.filter(j => j.rol === 'IMPOSTOR').length;
+    const inocentesVivos = vivos.filter(j => j.rol === 'NORMAL').length;
+
+    let nuevoEstado = 'EN_JUEGO'; // Por defecto sigue el juego
+
+    // 3. REGLAS DE VICTORIA
+    // A. Ganan Inocentes: No quedan impostores
+    if (impostoresVivos === 0) {
+        nuevoEstado = 'VICTORIA_INOCENTE';
+    } 
+    // B. Ganan Impostores: Quedan 2 jugadores y uno es impostor (1vs1 es imposible ganar debate)
+    // O si hay igual o más impostores que inocentes
+    else if (impostoresVivos >= inocentesVivos) {
+        nuevoEstado = 'VICTORIA_IMPOSTOR';
+    }
+
+    // 4. ACTUALIZAR BD
+    await supabaseClient
+        .from('salas')
+        .update({
+            estado: nuevoEstado,
+            jugadores: nuevosJugadores
+        })
+        .eq('id', salaActual.id);
+}
+
+async function saltarVotacionHost() {
+    if (!esHost) return;
+    // Volver al juego sin eliminar a nadie
+    await supabaseClient.from('salas').update({ estado: 'EN_JUEGO' }).eq('id', salaActual.id);
+}
+
+// --- 5. PANTALLA FINAL ---
+function mostrarPantallaVictoria(sala) {
+    mostrarPanel('victoria');
+    
+    const titulo = document.getElementById('titulo-victoria');
+    const subtitulo = document.getElementById('subtitulo-victoria');
+    const panelVictoria = document.getElementById('victoria-pantalla');
+    const palabraFinal = document.getElementById('palabra-final');
+    const listaImpostores = document.getElementById('lista-impostores-revelados');
+    
+    palabraFinal.textContent = sala.tema;
+
+    // Buscar nombres de impostores
+    const nombresImpostores = sala.jugadores
+        .filter(j => j.rol === 'IMPOSTOR')
+        .map(j => j.nombre)
+        .join(', ');
+
+    listaImpostores.textContent = `Los Impostores eran: ${nombresImpostores}`;
+
+    if (sala.estado === 'VICTORIA_INOCENTE') {
+        titulo.textContent = "🏆 ¡GANAN LOS CIUDADANOS!";
+        subtitulo.textContent = "Todos los impostores fueron eliminados.";
+        panelVictoria.className = 'panel victoria-inocente';
+        document.body.className = 'victoria-inocente';
+    } else {
+        titulo.textContent = "🔪 ¡GANAN LOS IMPOSTORES!";
+        subtitulo.textContent = "Tomaron el control de la sala.";
+        panelVictoria.className = 'panel victoria-impostor';
+        document.body.className = 'victoria-impostor';
+    }
+
+    const btn = document.getElementById('btn-volver-sala');
+    btn.style.display = esHost ? 'block' : 'none';
+}
+
+async function reiniciarRondaHost() {
+    const jugadoresReset = salaActual.jugadores.map(j => ({ ...j, rol: 'PENDIENTE', estado: 'VIVO' }));
+    await supabaseClient
+        .from('salas')
+        .update({ estado: 'ESPERA', tema: '', jugadores: jugadoresReset })
+        .eq('id', salaActual.id);
+}
+
+// Inicialización
 document.addEventListener('DOMContentLoaded', () => {
     cargarCategorias();
     mostrarPanel('inicio');
