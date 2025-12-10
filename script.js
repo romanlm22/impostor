@@ -151,7 +151,7 @@ async function unirseSala() {
 
     if (error || !sala) return alert('Sala no encontrada.');
     if (sala.estado !== 'ESPERA') return alert('La partida ya empezó.');
-    if (sala.jugadores.length >= 10) return alert('Sala llena.');
+    if (sala.jugadores.length >= 12) return alert('Sala llena.');
 
     const yaExiste = sala.jugadores.some(j => j.nombre === nombreJugador);
     if(yaExiste) return alert('Nombre ya usado en esta sala.');
@@ -280,7 +280,7 @@ function actualizarListaJugadores(jugadores) {
     });
     document.getElementById('count-jugadores').textContent = jugadores.length;
     const btnIniciar = document.getElementById('iniciar-juego-btn');
-    if (btnIniciar) btnIniciar.style.display = (esHost && jugadores.length >= 4) ? 'block' : 'none';
+    if (btnIniciar) btnIniciar.style.display = (esHost && jugadores.length >= 3) ? 'block' : 'none';
 }
 
 function actualizarListaOrdenJuego(jugadores) {
@@ -320,7 +320,7 @@ function mezclarArray(array) {
 
 // --- 1. INICIAR EL JUEGO (REPARTO DE ROLES) ---
 async function iniciarJuegoHost() {
-    if (salaActual.jugadores.length < 4) return alert("Mínimo 4 jugadores.");
+    if (salaActual.jugadores.length < 3) return alert("Mínimo 3 jugadores.");
     
     const temas = data[salaActual.categoria]; 
     const tema = temas[Math.floor(Math.random() * temas.length)];
