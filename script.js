@@ -290,7 +290,7 @@ function actualizarListaJugadores(jugadores) {
     document.getElementById('count-jugadores').textContent = jugadores.length;
     
     const btnIniciar = document.getElementById('iniciar-juego-btn');
-    if (btnIniciar) btnIniciar.style.display = (esHost && jugadores.length >= 4) ? 'block' : 'none';
+    if (btnIniciar) btnIniciar.style.display = (esHost && jugadores.length >= 3) ? 'block' : 'none';
 }
 
 // Nueva función para actualizar la lista DURANTE el juego (si alguien se va)
@@ -329,7 +329,7 @@ function mezclarArray(array) {
 }
 
 async function iniciarJuegoHost() {
-    if (salaActual.jugadores.length < 4) return alert("Mínimo 4 jugadores.");
+    if (salaActual.jugadores.length < 3) return alert("Mínimo 3 jugadores.");
     
     const temas = data[salaActual.categoria]; 
     const tema = temas[Math.floor(Math.random() * temas.length)];
