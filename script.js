@@ -8,7 +8,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // --- DATOS ---
 const data = {
-    futbol: ["maradona, pele", "Messi", "Cristiano Ronaldo", "Neymar", "Zidane", "Mbappé", "Ronaldinho"],
+    futbol: ["maradona", "pele", "Messi", "Cristiano Ronaldo", "Neymar", "Zidane", "Mbappé", "Ronaldinho"],
     deportes: ["Tenis", "Baloncesto", "Nado", "Maratón", "Boxeo", "Golf", "Rugby"],
     trabajos: ["Director", "Cartero", "Chef", "Arquitecto", "Veterinario", "Programador", "Dentista"],
     comida: ["Sopa", "Sushi", "Taco Mexicano", "Pizza Napolitana", "Hamburguesa", "chipa", "empanada"],
