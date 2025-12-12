@@ -6,7 +6,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// --- DATOS (NUEVAS CATEGORÍAS) ---
+// --- DATOS ---
 const data = {
     futbol: ["maradona", "pele", "Messi", "Cristiano Ronaldo", "Neymar", "Zidane", "Mbappé", "Ronaldinho"],
     deportes: ["Tenis", "Baloncesto", "Nado", "Maratón", "Boxeo", "Golf", "Rugby"],
@@ -26,7 +26,8 @@ let nombreJugador = '';
 let categoriaSeleccionada = '';
 let esHost = false;
 let supabaseSubscription = null;
-let timerInterval = null; 
+let timerInterval = null;    // Timer del debate
+let votingInterval = null;   // Timer de la votación
 
 // --- DOM ---
 const pantallas = {
@@ -114,7 +115,6 @@ async function crearSala() {
     const codigo = generarCodigo();
     const jugadorId = Date.now().toString(36);
 
-    // Inicializamos jugador con 'voto: null'
     const { data: nuevaSala, error } = await supabaseClient
         .from('salas')
         .insert({
@@ -187,7 +187,6 @@ async function salirDeSala() {
     }
 }
 
-// Expulsar en sala de espera (Host)
 async function expulsarJugadorHost(idJugadorAExpulsar) {
     if (!esHost) return;
     if (!confirm("¿Quieres expulsar a este jugador de la sala?")) return;
@@ -198,6 +197,7 @@ async function expulsarJugadorHost(idJugadorAExpulsar) {
 function volverAlInicio() {
     if (supabaseSubscription) supabaseClient.removeChannel(supabaseSubscription);
     if (timerInterval) clearInterval(timerInterval);
+    if (votingInterval) clearInterval(votingInterval);
     salaActual = null;
     esHost = false;
     mostrarPanel('inicio');
@@ -295,7 +295,6 @@ function actualizarListaJugadores(jugadores) {
 
     document.getElementById('count-jugadores').textContent = jugadores.length;
     const btnIniciar = document.getElementById('iniciar-juego-btn');
-    // CAMBIO: Mínimo 3 jugadores
     if (btnIniciar) btnIniciar.style.display = (esHost && jugadores.length >= 3) ? 'block' : 'none';
 }
 
@@ -333,7 +332,6 @@ function mezclarArray(array) {
 
 // --- 1. INICIAR EL JUEGO ---
 async function iniciarJuegoHost() {
-    // CAMBIO: Mínimo 3 jugadores
     if (salaActual.jugadores.length < 3) return alert("Mínimo 3 jugadores.");
     
     const temas = data[salaActual.categoria]; 
@@ -345,7 +343,6 @@ async function iniciarJuegoHost() {
     else if (numJugadores >= 11) numImpostores = 3;
 
     let jugadoresMezclados = mezclarArray([...salaActual.jugadores]);
-    // Reseteamos voto a null al inicio
     const jugadoresAsignados = jugadoresMezclados.map(j => ({ ...j, rol: 'NORMAL', estado: 'VIVO', voto: null }));
     
     let asignados = 0;
@@ -438,12 +435,11 @@ function iniciarTimerVisual() {
 }
 
 // =========================================================
-// V. VOTACIÓN (LÓGICA NUEVA)
+// V. VOTACIÓN
 // =========================================================
 
 async function activarFaseVotacionHost() {
     if (!esHost) return;
-    // Reseteamos los votos a null antes de empezar
     const jugadoresLimpios = salaActual.jugadores.map(j => ({ ...j, voto: null }));
     await supabaseClient.from('salas').update({ 
         estado: 'VOTANDO',
@@ -451,40 +447,50 @@ async function activarFaseVotacionHost() {
     }).eq('id', salaActual.id);
 }
 
+// --- FUNCIÓN DE VOTACIÓN ACTUALIZADA CON TIMER ---
 function mostrarPantallaVotacion(jugadores, yo) {
     mostrarPanel('votacion');
     if (timerInterval) clearInterval(timerInterval);
     
+    // Timer de votación (30 segundos)
+    if (votingInterval) clearInterval(votingInterval);
+    let timeLeft = 30;
+    const timerDisplay = document.getElementById('voting-timer-display');
+    timerDisplay.textContent = timeLeft;
+
+    votingInterval = setInterval(() => {
+        timeLeft--;
+        timerDisplay.textContent = timeLeft;
+        if (timeLeft <= 0) {
+            clearInterval(votingInterval);
+            if (esHost) {
+                // Si el tiempo se acaba, el host cierra automáticamente
+                procesarVotacionHost();
+            }
+        }
+    }, 1000);
+
     const container = document.getElementById('lista-votar-jugadores');
     container.innerHTML = '';
     const estadoVoto = document.getElementById('estado-votacion');
     const vivos = jugadores.filter(j => j.estado === 'VIVO');
 
-    // Estado del voto
     if (yo.voto) {
-        // Buscar nombre del votado
         const votado = jugadores.find(j => j.id === yo.voto);
         estadoVoto.textContent = `Has votado por: ${votado ? votado.nombre : 'Saltar'}`;
     } else {
         estadoVoto.textContent = "Selecciona a un jugador:";
     }
 
-    // Generar botones para votar
     vivos.forEach(j => {
-        // No te puedes votar a ti mismo (opcional, pero común)
         if (j.id === yo.id) return; 
 
         const btn = document.createElement('button');
         btn.className = 'btn-votar-jugador';
-        // Resaltar si ya lo voté
         if (yo.voto === j.id) btn.classList.add('seleccionado');
 
-        btn.innerHTML = `
-            <span>${j.nombre}</span>
-            ${yo.voto === j.id ? '<i class="fas fa-check"></i>' : ''}
-        `;
+        btn.innerHTML = `<span>${j.nombre}</span> ${yo.voto === j.id ? '<i class="fas fa-check"></i>' : ''}`;
         
-        // Si estoy vivo, puedo votar. Si estoy muerto, solo miro.
         if (yo.estado === 'VIVO') {
             btn.onclick = () => registrarVoto(j.id);
         } else {
@@ -495,7 +501,6 @@ function mostrarPantallaVotacion(jugadores, yo) {
         container.appendChild(btn);
     });
 
-    // Botón Saltar Voto (Skip)
     const btnSkip = document.createElement('button');
     btnSkip.className = 'btn-votar-jugador';
     btnSkip.innerHTML = "<span>Saltar Voto (Skip)</span>";
@@ -503,10 +508,8 @@ function mostrarPantallaVotacion(jugadores, yo) {
     if (yo.estado === 'VIVO') btnSkip.onclick = () => registrarVoto('SKIP');
     container.appendChild(btnSkip);
 
-    // Host Controls
     const btnCerrar = document.getElementById('btn-cerrar-votacion');
     if (esHost) {
-        // Contar votos totales para mostrar progreso (opcional)
         const totalVotos = vivos.filter(j => j.voto !== null).length;
         const totalVivos = vivos.length;
         btnCerrar.style.display = 'block';
@@ -516,22 +519,9 @@ function mostrarPantallaVotacion(jugadores, yo) {
     }
 }
 
-// 1. Jugador hace clic en un nombre -> Actualiza su propio campo 'voto' en BD
 async function registrarVoto(idDestino) {
     if (salaActual.estado !== 'VOTANDO') return;
     
-    // Obtenemos copia local de jugadores y actualizamos MI voto
-    const nuevosJugadores = salaActual.jugadores.map(j => {
-        if (j.nombre === nombreJugador) return { ...j, voto: idDestino };
-        return j;
-    });
-
-    // Enviamos a Supabase
-    // NOTA: En apps reales, esto puede tener race conditions. 
-    // Para este prototipo, asumimos que Supabase maneja el update rápido.
-    // Idealmente usaríamos RPC, pero esto funcionará para jugar con amigos.
-    
-    // Primero hacemos un fetch fresco para no sobrescribir votos de otros
     const { data: salaFresca } = await supabaseClient.from('salas').select('jugadores').eq('id', salaActual.id).single();
     
     if (salaFresca) {
@@ -539,21 +529,20 @@ async function registrarVoto(idDestino) {
             if (j.nombre === nombreJugador) return { ...j, voto: idDestino };
             return j;
         });
-        
         await supabaseClient.from('salas').update({ jugadores: jugadoresActualizados }).eq('id', salaActual.id);
     }
 }
 
-// 2. Host cierra la votación y calcula el expulsado
 async function procesarVotacionHost() {
     if (!esHost) return;
+    
+    // Detener timer
+    if (votingInterval) clearInterval(votingInterval);
 
-    // Obtener datos más recientes
     const { data: sala } = await supabaseClient.from('salas').select('*').eq('id', salaActual.id).single();
     const jugadores = sala.jugadores;
     const vivos = jugadores.filter(j => j.estado === 'VIVO');
 
-    // CONTEO DE VOTOS
     const conteo = {};
     vivos.forEach(j => {
         if (j.voto && j.voto !== 'SKIP') {
@@ -561,7 +550,6 @@ async function procesarVotacionHost() {
         }
     });
 
-    // Encontrar el máximo
     let maxVotos = 0;
     let expulsadoId = null;
     let empate = false;
@@ -576,18 +564,14 @@ async function procesarVotacionHost() {
         }
     }
 
-    // LÓGICA DE EXPULSIÓN
     let nuevosJugadores = [...jugadores];
     if (expulsadoId && !empate) {
         nuevosJugadores = jugadores.map(j => {
             if (j.id === expulsadoId) return { ...j, estado: 'ELIMINADO' };
             return j;
         });
-        // Podríamos mostrar un mensaje de quién se fue, pero por ahora pasamos directo
     } 
-    // Si hay empate o nadie votó, nadie sale.
 
-    // CHECK VICTORIA
     const vivosFinal = nuevosJugadores.filter(j => j.estado === 'VIVO');
     const impostoresVivos = vivosFinal.filter(j => j.rol === 'IMPOSTOR').length;
     const inocentesVivos = vivosFinal.filter(j => j.rol === 'NORMAL').length;
@@ -599,7 +583,6 @@ async function procesarVotacionHost() {
         nuevoEstado = 'VICTORIA_IMPOSTOR';
     }
 
-    // Resetear votos para la próxima
     nuevosJugadores = nuevosJugadores.map(j => ({ ...j, voto: null }));
 
     await supabaseClient
