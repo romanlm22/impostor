@@ -14,7 +14,7 @@
 
         <div class="panel" id="inicio-pantalla">
             <h1>🕵️‍♂️ Impostor Online</h1>
-            <p>Introduce tu nombre y elige una opción.</p>
+            <p>Introduce tu nombre para jugar.</p>
 
             <div class="input-group">
                 <i class="fas fa-user icon"></i>
@@ -27,12 +27,8 @@
         
         <div class="panel hidden" id="panel-crear">
             <h2>Crear Sala</h2>
-            <div class="opciones-cat">
-                <label>Selecciona una Categoría:</label>
-                <div class="categorias" id="select-categorias">
-                    </div>
-            </div>
-            <button onclick="crearSala()">Confirmar y Crear</button>
+            <p>La categoría se elegirá automáticamente al iniciar.</p>
+            <button onclick="crearSala()">🚀 Crear Sala Aleatoria</button>
             <button class="secondary" onclick="mostrarPanelInicio()">Volver</button>
         </div>
 
@@ -48,20 +44,16 @@
 
         <div class="panel hidden" id="sala-pantalla">
             <h2>Sala: <span id="codigo-sala-display" class="highlight">...</span></h2>
+            
             <p id="categoria-sala-display" style="font-size: 1.2em; font-weight: bold; color: #3498db;"></p>
             
-            <div id="host-controls-categoria" style="display: none; margin: 15px 0; border-top: 1px solid #ddd; padding-top: 10px;">
-                <p style="font-size: 0.9em; color: #666;">Cambiar Categoría:</p>
-                <div class="categorias" id="categorias-sala-espera"></div>
-            </div>
-
             <div class="jugadores-list">
                 <h3>Jugadores (<span id="count-jugadores">0</span>/12):</h3>
                 <ul id="lista-jugadores"></ul>
             </div>
             
             <button id="iniciar-juego-btn" onclick="iniciarJuegoHost()" style="display: none;">
-                <i class="fas fa-play"></i> Iniciar Partida
+                <i class="fas fa-play"></i> Iniciar Partida (Aleatoria)
             </button>
 
             <button onclick="salirDeSala()" class="btn-salir">
@@ -103,20 +95,15 @@
             </button>
         </div>
 
-           <div class="panel hidden" id="votacion-pantalla">
+        <div class="panel hidden" id="votacion-pantalla">
             <h2>🗳️ ¡Hora de Votar!</h2>
-            
             <div style="font-size: 1.5em; font-weight: bold; color: #e74c3c; margin: 10px 0;">
                 Tiempo: <span id="voting-timer-display">150</span>s
             </div>
-
             <p>Selecciona al sospechoso. El más votado será expulsado.</p>
             
-            <div id="estado-votacion" style="margin-bottom: 10px; font-weight: bold; color: #e67e22;">
-                </div>
-
-            <div id="lista-votar-jugadores" class="grid-votos">
-                </div>
+            <div id="estado-votacion" style="margin-bottom: 10px; font-weight: bold; color: #e67e22;"></div>
+            <div id="lista-votar-jugadores" class="grid-votos"></div>
 
             <button onclick="procesarVotacionHost()" id="btn-cerrar-votacion" style="display: none; margin-top: 20px; background-color: #c0392b; color: white;">
                 🛑 Forzar Cierre Votación

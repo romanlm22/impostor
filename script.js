@@ -8,7 +8,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // --- DATOS ---
 const data = {
-    futbolista: ["maradona", "pele", "Messi", "Cristiano Ronaldo", "Neymar", "Zidane", "Mbappé", "Ronaldinho"],
+    futbol: ["maradona", "pele", "Messi", "Cristiano Ronaldo", "Neymar", "Zidane", "Mbappé", "Ronaldinho"],
     deportes: ["Tenis", "Baloncesto", "Nado", "Maratón", "Boxeo", "Golf", "Rugby"],
     trabajos: ["Director de cine", "Cartero", "Chef", "Arquitecto", "Veterinario", "Programador", "Dentista"],
     comida: ["Sopa", "Sushi", "Taco Mexicano", "Pizza Napolitana", "Hamburguesa", "chipa", "empanada"],
@@ -23,11 +23,11 @@ const data = {
 // --- ESTADO ---
 let salaActual = null;
 let nombreJugador = ''; 
-let categoriaSeleccionada = '';
+// 'categoriaSeleccionada' ya no se usa manualmente, se lee de la salaActual
 let esHost = false;
 let supabaseSubscription = null;
-let timerInterval = null;    // Timer del debate
-let votingInterval = null;   // Timer de la votación
+let timerInterval = null;    
+let votingInterval = null;
 
 // --- DOM ---
 const pantallas = {
@@ -68,37 +68,10 @@ function mostrarPanelUnirse() {
     mostrarPanel('unirse');
 }
 
-function cargarCategorias() {
-    const contenedorCrear = document.getElementById('select-categorias');
-    const contenedorEspera = document.getElementById('categorias-sala-espera');
-    
-    contenedorCrear.innerHTML = '';
-    contenedorEspera.innerHTML = '';
-
-    Object.keys(data).forEach(key => {
-        const btn1 = document.createElement('button');
-        btn1.textContent = key.toUpperCase();
-        btn1.classList.add('categoria-btn');
-        btn1.dataset.cat = key; 
-        btn1.onclick = () => seleccionarCategoriaLocal(key, btn1);
-        contenedorCrear.appendChild(btn1);
-
-        const btn2 = document.createElement('button');
-        btn2.textContent = key.toUpperCase();
-        btn2.classList.add('categoria-btn');
-        btn2.style.fontSize = '0.8em'; 
-        btn2.style.padding = '5px';
-        btn2.dataset.cat = key;
-        btn2.onclick = () => cambiarCategoriaHost(key); 
-        contenedorEspera.appendChild(btn2);
-    });
-}
-
-function seleccionarCategoriaLocal(key, element) {
-    categoriaSeleccionada = key;
-    const panelCrear = document.getElementById('select-categorias');
-    panelCrear.querySelectorAll('.categoria-btn').forEach(btn => btn.classList.remove('selected'));
-    element.classList.add('selected');
+// Función auxiliar para elegir categoría al azar
+function obtenerCategoriaAleatoria() {
+    const keys = Object.keys(data);
+    return keys[Math.floor(Math.random() * keys.length)];
 }
 
 // =========================================================
@@ -110,7 +83,8 @@ function generarCodigo() {
 }
 
 async function crearSala() {
-    if (!categoriaSeleccionada) return alert('Selecciona una categoría.');
+    // 1. Elegimos categoría automática inicial
+    const catInicial = obtenerCategoriaAleatoria();
     
     const codigo = generarCodigo();
     const jugadorId = Date.now().toString(36);
@@ -120,7 +94,7 @@ async function crearSala() {
         .insert({
             codigo: codigo,
             estado: 'ESPERA',
-            categoria: categoriaSeleccionada,
+            categoria: catInicial, // Se guarda en BD
             tema: '', 
             jugadores: [{ id: jugadorId, nombre: nombreJugador, esHost: true, rol: 'PENDIENTE', estado: 'VIVO', voto: null }]
         })
@@ -135,7 +109,7 @@ async function crearSala() {
     salaActual = nuevaSala;
     esHost = true;
     
-    mostrarSalaEspera(codigo, categoriaSeleccionada);
+    mostrarSalaEspera(codigo, catInicial);
     iniciarSuscripcionSala(codigo);
 }
 
@@ -208,18 +182,7 @@ function volverAlInicio() {
 function mostrarSalaEspera(codigo, categoria) {
     mostrarPanel('sala');
     document.getElementById('codigo-sala-display').textContent = codigo;
-    actualizarDisplayCategoria(categoria);
-    document.getElementById('host-controls-categoria').style.display = esHost ? 'block' : 'none';
-}
-
-function actualizarDisplayCategoria(categoria) {
     document.getElementById('categoria-sala-display').textContent = `Categoría Actual: ${categoria.toUpperCase()}`;
-    const container = document.getElementById('categorias-sala-espera');
-    container.querySelectorAll('.categoria-btn').forEach(btn => {
-        btn.classList.remove('selected');
-        if (btn.dataset.cat === categoria) btn.classList.add('selected');
-    });
-    categoriaSeleccionada = categoria;
 }
 
 // =========================================================
@@ -248,7 +211,11 @@ function manejarCambioSala(nuevaSala) {
     if (!yo) { alert("Has sido expulsado."); volverAlInicio(); return; }
 
     actualizarListaJugadores(nuevaSala.jugadores);
-    if (nuevaSala.categoria !== categoriaSeleccionada) actualizarDisplayCategoria(nuevaSala.categoria);
+    
+    // Si cambia la categoría (porque el host inició ronda nueva), actualizar texto en espera
+    if (nuevaSala.estado === 'ESPERA') {
+        document.getElementById('categoria-sala-display').textContent = `Categoría Actual: ${nuevaSala.categoria.toUpperCase()}`;
+    }
 
     switch (nuevaSala.estado) {
         case 'ESPERA':
@@ -317,11 +284,6 @@ function actualizarListaOrdenJuego(jugadores) {
 // IV. LÓGICA DEL JUEGO
 // =========================================================
 
-async function cambiarCategoriaHost(nuevaCat) {
-    if (!esHost) return;
-    await supabaseClient.from('salas').update({ categoria: nuevaCat }).eq('id', salaActual.id);
-}
-
 function mezclarArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -330,13 +292,16 @@ function mezclarArray(array) {
     return array;
 }
 
-// --- 1. INICIAR EL JUEGO ---
+// --- 1. INICIAR EL JUEGO AUTOMÁTICO ---
 async function iniciarJuegoHost() {
     if (salaActual.jugadores.length < 3) return alert("Mínimo 3 jugadores.");
     
-    const temas = data[salaActual.categoria]; 
+    // 1. ELEGIR NUEVA CATEGORÍA Y PALABRA AL AZAR
+    const nuevaCategoria = obtenerCategoriaAleatoria();
+    const temas = data[nuevaCategoria]; 
     const tema = temas[Math.floor(Math.random() * temas.length)];
     
+    // 2. CONFIGURAR IMPOSTORES
     const numJugadores = salaActual.jugadores.length;
     let numImpostores = 1;
     if (numJugadores > 5 && numJugadores <= 10) numImpostores = 2;
@@ -354,10 +319,12 @@ async function iniciarJuegoHost() {
         }
     }
     
+    // 3. ACTUALIZAR TODO EN LA BD
     await supabaseClient
         .from('salas')
         .update({
             estado: 'EN_JUEGO',
+            categoria: nuevaCategoria, // ¡Actualizamos la categoría aquí!
             tema: tema,
             jugadores: jugadoresAsignados 
         })
@@ -376,6 +343,7 @@ function asignarRolLocal(temaGlobal, jugadores, yo) {
     }
 
     mostrarPanel('rol');
+    // Leemos la categoría directamente de la sala actualizada
     document.getElementById('display-categoria-rol').textContent = salaActual.categoria.toUpperCase();
 
     const rolNombre = document.getElementById('rol-nombre');
@@ -447,7 +415,6 @@ async function activarFaseVotacionHost() {
     }).eq('id', salaActual.id);
 }
 
-// --- FUNCIÓN DE VOTACIÓN ACTUALIZADA CON TIMER ---
 function mostrarPantallaVotacion(jugadores, yo) {
     mostrarPanel('votacion');
     if (timerInterval) clearInterval(timerInterval);
@@ -464,7 +431,6 @@ function mostrarPantallaVotacion(jugadores, yo) {
         if (timeLeft <= 0) {
             clearInterval(votingInterval);
             if (esHost) {
-                // Si el tiempo se acaba, el host cierra automáticamente
                 procesarVotacionHost();
             }
         }
@@ -536,7 +502,6 @@ async function registrarVoto(idDestino) {
 async function procesarVotacionHost() {
     if (!esHost) return;
     
-    // Detener timer
     if (votingInterval) clearInterval(votingInterval);
 
     const { data: sala } = await supabaseClient.from('salas').select('*').eq('id', salaActual.id).single();
@@ -638,6 +603,5 @@ async function reiniciarRondaHost() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    cargarCategorias();
     mostrarPanel('inicio');
 });
