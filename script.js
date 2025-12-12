@@ -454,7 +454,7 @@ function mostrarPantallaVotacion(jugadores, yo) {
     
     // Timer de votación (30 segundos)
     if (votingInterval) clearInterval(votingInterval);
-    let timeLeft = 30;
+    let timeLeft = 150;
     const timerDisplay = document.getElementById('voting-timer-display');
     timerDisplay.textContent = timeLeft;
 
