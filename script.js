@@ -153,8 +153,6 @@ async function unirseSala() {
 
     if (error || !sala) return alert('Sala no encontrada.');
     if (sala.estado !== 'ESPERA') return alert('La partida ya empezó.');
-    
-    // --- CAMBIO: LÍMITE SUBIDO A 12 JUGADORES ---
     if (sala.jugadores.length >= 12) return alert('Sala llena (máx 12).');
 
     const yaExiste = sala.jugadores.some(j => j.nombre === nombreJugador);
@@ -315,26 +313,19 @@ function mezclarArray(array) {
     return array;
 }
 
-// --- 1. INICIAR EL JUEGO (REPARTO DE ROLES) ---
+// --- 1. INICIAR EL JUEGO ---
 async function iniciarJuegoHost() {
     if (salaActual.jugadores.length < 3) return alert("Mínimo 3 jugadores.");
     
     const temas = data[salaActual.categoria]; 
     const tema = temas[Math.floor(Math.random() * temas.length)];
     
-    // --- CAMBIO: LÓGICA DE NÚMERO DE IMPOSTORES ---
     const numJugadores = salaActual.jugadores.length;
     let numImpostores = 1;
-    
-    if (numJugadores > 5 && numJugadores <= 10) {
-        numImpostores = 2;
-    } else if (numJugadores >= 11) {
-        // A partir de 11 jugadores, 3 impostores
-        numImpostores = 3;
-    }
+    if (numJugadores > 5 && numJugadores <= 10) numImpostores = 2;
+    else if (numJugadores >= 11) numImpostores = 3;
 
     let jugadoresMezclados = mezclarArray([...salaActual.jugadores]);
-    
     const jugadoresAsignados = jugadoresMezclados.map(j => ({ ...j, rol: 'NORMAL', estado: 'VIVO' }));
     
     let asignados = 0;
@@ -369,6 +360,9 @@ function asignarRolLocal(temaGlobal, jugadores, yo) {
 
     mostrarPanel('rol');
     
+    // --- NUEVO: Mostrar categoría en la pantalla de ROL ---
+    document.getElementById('display-categoria-rol').textContent = salaActual.categoria.toUpperCase();
+
     const rolNombre = document.getElementById('rol-nombre');
     const rolInstr = document.getElementById('rol-instruccion');
     const cuentaReg = document.getElementById('cuenta-regresiva-rol');
@@ -392,6 +386,9 @@ function asignarRolLocal(temaGlobal, jugadores, yo) {
         if (countdown <= 0) {
             clearInterval(interval);
             mostrarPanel('juego');
+
+            // --- NUEVO: Mostrar categoría en la pantalla de JUEGO ---
+            document.getElementById('display-categoria-juego').textContent = salaActual.categoria.toUpperCase();
 
             const palabraDisplay = document.getElementById('palabra-clave-visible');
             if (yo.rol === 'IMPOSTOR') {
