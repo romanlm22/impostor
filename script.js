@@ -18,7 +18,6 @@ const categoryImages = {
     famosos: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Albert_Einstein_Head.jpg/120px-Albert_Einstein_Head.jpg",
     GrupoRoman: null,
     GrupoMaxi: null,
-    Grupo: "https://images.pexels.com/photos/10034072/pexels-photo-10034072.jpeg",
 };
 
 // --- DATOS (PALABRAS CON IMÁGENES INDIVIDUALES) ---
@@ -100,7 +99,6 @@ const data = {
     // Los grupos no tienen imágenes por palabra, solo texto.
     GrupoRoman: ["FABRICIO ", "BRUNO", "ARMANDO", "JERE", "DANTE", "LOLO", "JOACO", "MARIO", "Francici", "MAURO", "Juani"],
     GrupoMaxi: ["Maxi", "Agustin", "ExE", "PINI", "GERMAN", "FABRI", "GUSTAVO", "JOEL"],
-    Grupo: [{word: "Roman", img: "https://images.pexels.com/photos/10034072/pexels-photo-10034072.jpeg"}]
 };
 
 // --- ESTADO ---
