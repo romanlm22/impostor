@@ -105,11 +105,17 @@
 
         <div class="panel hidden" id="votacion-pantalla">
             <h2>🗳️ ¡Hora de Votar!</h2>
-            <p>Debatan y decidan a quién expulsar.</p>
-            <p class="instruccion" id="instruccion-voto">Esperando que el Host ejecute la votación...</p>
+            <p>Selecciona al sospechoso. El más votado será expulsado.</p>
             
+            <div id="estado-votacion" style="margin-bottom: 10px; font-weight: bold; color: #e67e22;">
+                </div>
+
             <div id="lista-votar-jugadores" class="grid-votos">
                 </div>
+
+            <button onclick="procesarVotacionHost()" id="btn-cerrar-votacion" style="display: none; margin-top: 20px; background-color: #c0392b; color: white;">
+                🛑 Cerrar Votación y Contar
+            </button>
         </div>
 
         <div class="panel hidden" id="victoria-pantalla">

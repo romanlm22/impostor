@@ -6,7 +6,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// --- DATOS ---
+// --- DATOS (NUEVAS CATEGORÍAS) ---
 const data = {
     futbol: ["maradona", "pele", "Messi", "Cristiano Ronaldo", "Neymar", "Zidane", "Mbappé", "Ronaldinho"],
     deportes: ["Tenis", "Baloncesto", "Nado", "Maratón", "Boxeo", "Golf", "Rugby"],
@@ -16,7 +16,6 @@ const data = {
     vehiculos: ["Automóvil", "Motocicleta", "Bicicleta", "Camión", "Avión", "Barco", "Tren"],
     animales: ["Elefante", "Tigre", "Canguro", "Delfín", "Águila", "Serpiente", "Jirafa"],
     famosos: ["Albert Einstein", "Marilyn Monroe", "Leonardo da Vinci", "Cleopatra", "William Shakespeare", "Frida Kahlo", "Brat Pit"],
-    //delGrupo: ["FABRICIO O JOA", "BRUNO O TOBI", "ARMANDO O MARCOS", "JERE", "DANTE", "LOLO O JUAN", "JOACO O LISA", "MARIO O Lauty", "Francici o Fer", "MAURO"],
     GrupoRoman: ["FABRICIO ", "BRUNO", "ARMANDO", "JERE", "DANTE", "LOLO", "JOACO", "MARIO", "Francici", "MAURO", "Juani"],
     GrupoMaxi: ["Maxi", "Agustin", "ExE", "PINI", "GERMAN", "FABRI", "GUSTAVO", "JOEL"],
 };
@@ -115,6 +114,7 @@ async function crearSala() {
     const codigo = generarCodigo();
     const jugadorId = Date.now().toString(36);
 
+    // Inicializamos jugador con 'voto: null'
     const { data: nuevaSala, error } = await supabaseClient
         .from('salas')
         .insert({
@@ -122,7 +122,7 @@ async function crearSala() {
             estado: 'ESPERA',
             categoria: categoriaSeleccionada,
             tema: '', 
-            jugadores: [{ id: jugadorId, nombre: nombreJugador, esHost: true, rol: 'PENDIENTE', estado: 'VIVO' }]
+            jugadores: [{ id: jugadorId, nombre: nombreJugador, esHost: true, rol: 'PENDIENTE', estado: 'VIVO', voto: null }]
         })
         .select()
         .single();
@@ -158,7 +158,7 @@ async function unirseSala() {
     const yaExiste = sala.jugadores.some(j => j.nombre === nombreJugador);
     if(yaExiste) return alert('Nombre ya usado en esta sala.');
 
-    const nuevoJugador = { id: jugadorId, nombre: nombreJugador, esHost: false, rol: 'PENDIENTE', estado: 'VIVO' };
+    const nuevoJugador = { id: jugadorId, nombre: nombreJugador, esHost: false, rol: 'PENDIENTE', estado: 'VIVO', voto: null };
     const jugadoresActualizados = [...sala.jugadores, nuevoJugador];
 
     const { error: updateError } = await supabaseClient
@@ -185,6 +185,14 @@ async function salirDeSala() {
         }
         volverAlInicio();
     }
+}
+
+// Expulsar en sala de espera (Host)
+async function expulsarJugadorHost(idJugadorAExpulsar) {
+    if (!esHost) return;
+    if (!confirm("¿Quieres expulsar a este jugador de la sala?")) return;
+    const nuevosJugadores = salaActual.jugadores.filter(j => j.id !== idJugadorAExpulsar);
+    await supabaseClient.from('salas').update({ jugadores: nuevosJugadores }).eq('id', salaActual.id);
 }
 
 function volverAlInicio() {
@@ -237,7 +245,7 @@ function iniciarSuscripcionSala(codigo) {
 function manejarCambioSala(nuevaSala) {
     salaActual = nuevaSala;
     const yo = nuevaSala.jugadores.find(j => j.nombre === nombreJugador);
-    if (!yo) { alert("Has salido de la sala."); volverAlInicio(); return; }
+    if (!yo) { alert("Has sido expulsado."); volverAlInicio(); return; }
 
     actualizarListaJugadores(nuevaSala.jugadores);
     if (nuevaSala.categoria !== categoriaSeleccionada) actualizarDisplayCategoria(nuevaSala.categoria);
@@ -247,7 +255,6 @@ function manejarCambioSala(nuevaSala) {
             mostrarPanel('sala');
             document.body.className = ''; 
             break;
-            
         case 'EN_JUEGO':
             if (!pantallas.juego.classList.contains('hidden')) {
                 actualizarListaOrdenJuego(nuevaSala.jugadores);
@@ -255,11 +262,9 @@ function manejarCambioSala(nuevaSala) {
                 asignarRolLocal(nuevaSala.tema, nuevaSala.jugadores, yo);
             }
             break;
-
         case 'VOTANDO':
-            mostrarPantallaVotacion(nuevaSala.jugadores);
+            mostrarPantallaVotacion(nuevaSala.jugadores, yo);
             break;
-
         case 'VICTORIA_IMPOSTOR':
         case 'VICTORIA_INOCENTE':
             mostrarPantallaVictoria(nuevaSala);
@@ -271,13 +276,26 @@ function actualizarListaJugadores(jugadores) {
     const lista = document.getElementById('lista-jugadores');
     if (!lista) return;
     lista.innerHTML = '';
+    
     jugadores.forEach(j => {
         const li = document.createElement('li');
-        li.innerHTML = `<span>${j.nombre}</span> <span style="font-size:0.8em; color:#aaa;">${j.esHost ? '👑' : ''}</span>`;
+        const infoDiv = document.createElement('div');
+        infoDiv.innerHTML = `<span>${j.nombre}</span> <span style="font-size:0.8em; color:#f1c40f;">${j.esHost ? '👑' : ''}</span>`;
+        li.appendChild(infoDiv);
+
+        if (esHost && !j.esHost) {
+            const btnKick = document.createElement('button');
+            btnKick.className = 'btn-kick';
+            btnKick.innerHTML = '<i class="fas fa-times"></i>'; 
+            btnKick.onclick = () => expulsarJugadorHost(j.id);
+            li.appendChild(btnKick);
+        }
         lista.appendChild(li);
     });
+
     document.getElementById('count-jugadores').textContent = jugadores.length;
     const btnIniciar = document.getElementById('iniciar-juego-btn');
+    // CAMBIO: Mínimo 3 jugadores
     if (btnIniciar) btnIniciar.style.display = (esHost && jugadores.length >= 3) ? 'block' : 'none';
 }
 
@@ -315,6 +333,7 @@ function mezclarArray(array) {
 
 // --- 1. INICIAR EL JUEGO ---
 async function iniciarJuegoHost() {
+    // CAMBIO: Mínimo 3 jugadores
     if (salaActual.jugadores.length < 3) return alert("Mínimo 3 jugadores.");
     
     const temas = data[salaActual.categoria]; 
@@ -326,7 +345,8 @@ async function iniciarJuegoHost() {
     else if (numJugadores >= 11) numImpostores = 3;
 
     let jugadoresMezclados = mezclarArray([...salaActual.jugadores]);
-    const jugadoresAsignados = jugadoresMezclados.map(j => ({ ...j, rol: 'NORMAL', estado: 'VIVO' }));
+    // Reseteamos voto a null al inicio
+    const jugadoresAsignados = jugadoresMezclados.map(j => ({ ...j, rol: 'NORMAL', estado: 'VIVO', voto: null }));
     
     let asignados = 0;
     while (asignados < numImpostores) {
@@ -359,8 +379,6 @@ function asignarRolLocal(temaGlobal, jugadores, yo) {
     }
 
     mostrarPanel('rol');
-    
-    // --- NUEVO: Mostrar categoría en la pantalla de ROL ---
     document.getElementById('display-categoria-rol').textContent = salaActual.categoria.toUpperCase();
 
     const rolNombre = document.getElementById('rol-nombre');
@@ -386,8 +404,6 @@ function asignarRolLocal(temaGlobal, jugadores, yo) {
         if (countdown <= 0) {
             clearInterval(interval);
             mostrarPanel('juego');
-
-            // --- NUEVO: Mostrar categoría en la pantalla de JUEGO ---
             document.getElementById('display-categoria-juego').textContent = salaActual.categoria.toUpperCase();
 
             const palabraDisplay = document.getElementById('palabra-clave-visible');
@@ -401,7 +417,6 @@ function asignarRolLocal(temaGlobal, jugadores, yo) {
 
             actualizarListaOrdenJuego(jugadores);
             iniciarTimerVisual();
-            
             document.getElementById('btn-activar-voto').style.display = esHost ? 'block' : 'none';
         }
     }, 1000);
@@ -422,71 +437,170 @@ function iniciarTimerVisual() {
     }, 1000);
 }
 
-// --- 3. VOTACIÓN ---
+// =========================================================
+// V. VOTACIÓN (LÓGICA NUEVA)
+// =========================================================
+
 async function activarFaseVotacionHost() {
     if (!esHost) return;
-    await supabaseClient.from('salas').update({ estado: 'VOTANDO' }).eq('id', salaActual.id);
+    // Reseteamos los votos a null antes de empezar
+    const jugadoresLimpios = salaActual.jugadores.map(j => ({ ...j, voto: null }));
+    await supabaseClient.from('salas').update({ 
+        estado: 'VOTANDO',
+        jugadores: jugadoresLimpios
+    }).eq('id', salaActual.id);
 }
 
-function mostrarPantallaVotacion(jugadores) {
+function mostrarPantallaVotacion(jugadores, yo) {
     mostrarPanel('votacion');
     if (timerInterval) clearInterval(timerInterval);
     
     const container = document.getElementById('lista-votar-jugadores');
     container.innerHTML = '';
-    const instruccion = document.getElementById('instruccion-voto');
+    const estadoVoto = document.getElementById('estado-votacion');
     const vivos = jugadores.filter(j => j.estado === 'VIVO');
 
-    if (esHost) {
-        instruccion.textContent = "HOST: Pregunta los votos y haz clic en 'EXPULSAR' al elegido.";
-        vivos.forEach(j => {
-            const div = document.createElement('div');
-            div.className = 'btn-votar-jugador';
-            div.innerHTML = `
-                <span>${j.nombre}</span>
-                <button class="btn-eliminar-accion" onclick="ejecutarExpulsionHost('${j.id}')">EXPULSAR 💀</button>
-            `;
-            container.appendChild(div);
-        });
-        
-        const btnSaltar = document.createElement('button');
-        btnSaltar.textContent = "Saltar Votación (Nadie sale)";
-        btnSaltar.style.marginTop = "15px";
-        btnSaltar.onclick = () => saltarVotacionHost();
-        container.appendChild(btnSaltar);
-
+    // Estado del voto
+    if (yo.voto) {
+        // Buscar nombre del votado
+        const votado = jugadores.find(j => j.id === yo.voto);
+        estadoVoto.textContent = `Has votado por: ${votado ? votado.nombre : 'Saltar'}`;
     } else {
-        instruccion.textContent = "El Host registrará los votos. ¡Defiéndete!";
-        vivos.forEach(j => {
-            const div = document.createElement('div');
-            div.className = 'btn-votar-jugador';
-            div.innerHTML = `<span>${j.nombre}</span>`;
-            container.appendChild(div);
-        });
+        estadoVoto.textContent = "Selecciona a un jugador:";
+    }
+
+    // Generar botones para votar
+    vivos.forEach(j => {
+        // No te puedes votar a ti mismo (opcional, pero común)
+        if (j.id === yo.id) return; 
+
+        const btn = document.createElement('button');
+        btn.className = 'btn-votar-jugador';
+        // Resaltar si ya lo voté
+        if (yo.voto === j.id) btn.classList.add('seleccionado');
+
+        btn.innerHTML = `
+            <span>${j.nombre}</span>
+            ${yo.voto === j.id ? '<i class="fas fa-check"></i>' : ''}
+        `;
+        
+        // Si estoy vivo, puedo votar. Si estoy muerto, solo miro.
+        if (yo.estado === 'VIVO') {
+            btn.onclick = () => registrarVoto(j.id);
+        } else {
+            btn.disabled = true;
+            btn.style.opacity = 0.6;
+        }
+
+        container.appendChild(btn);
+    });
+
+    // Botón Saltar Voto (Skip)
+    const btnSkip = document.createElement('button');
+    btnSkip.className = 'btn-votar-jugador';
+    btnSkip.innerHTML = "<span>Saltar Voto (Skip)</span>";
+    if (yo.voto === 'SKIP') btnSkip.classList.add('seleccionado');
+    if (yo.estado === 'VIVO') btnSkip.onclick = () => registrarVoto('SKIP');
+    container.appendChild(btnSkip);
+
+    // Host Controls
+    const btnCerrar = document.getElementById('btn-cerrar-votacion');
+    if (esHost) {
+        // Contar votos totales para mostrar progreso (opcional)
+        const totalVotos = vivos.filter(j => j.voto !== null).length;
+        const totalVivos = vivos.length;
+        btnCerrar.style.display = 'block';
+        btnCerrar.textContent = `🛑 Cerrar Votación (${totalVotos}/${totalVivos})`;
+    } else {
+        btnCerrar.style.display = 'none';
     }
 }
 
-// --- 4. EXPULSIÓN Y VICTORIA ---
-async function ejecutarExpulsionHost(idVictima) {
-    if (!esHost) return;
-
+// 1. Jugador hace clic en un nombre -> Actualiza su propio campo 'voto' en BD
+async function registrarVoto(idDestino) {
+    if (salaActual.estado !== 'VOTANDO') return;
+    
+    // Obtenemos copia local de jugadores y actualizamos MI voto
     const nuevosJugadores = salaActual.jugadores.map(j => {
-        if (j.id === idVictima) return { ...j, estado: 'ELIMINADO' };
+        if (j.nombre === nombreJugador) return { ...j, voto: idDestino };
         return j;
     });
 
-    const vivos = nuevosJugadores.filter(j => j.estado === 'VIVO');
-    const impostoresVivos = vivos.filter(j => j.rol === 'IMPOSTOR').length;
-    const inocentesVivos = vivos.filter(j => j.rol === 'NORMAL').length;
+    // Enviamos a Supabase
+    // NOTA: En apps reales, esto puede tener race conditions. 
+    // Para este prototipo, asumimos que Supabase maneja el update rápido.
+    // Idealmente usaríamos RPC, pero esto funcionará para jugar con amigos.
+    
+    // Primero hacemos un fetch fresco para no sobrescribir votos de otros
+    const { data: salaFresca } = await supabaseClient.from('salas').select('jugadores').eq('id', salaActual.id).single();
+    
+    if (salaFresca) {
+        const jugadoresActualizados = salaFresca.jugadores.map(j => {
+            if (j.nombre === nombreJugador) return { ...j, voto: idDestino };
+            return j;
+        });
+        
+        await supabaseClient.from('salas').update({ jugadores: jugadoresActualizados }).eq('id', salaActual.id);
+    }
+}
+
+// 2. Host cierra la votación y calcula el expulsado
+async function procesarVotacionHost() {
+    if (!esHost) return;
+
+    // Obtener datos más recientes
+    const { data: sala } = await supabaseClient.from('salas').select('*').eq('id', salaActual.id).single();
+    const jugadores = sala.jugadores;
+    const vivos = jugadores.filter(j => j.estado === 'VIVO');
+
+    // CONTEO DE VOTOS
+    const conteo = {};
+    vivos.forEach(j => {
+        if (j.voto && j.voto !== 'SKIP') {
+            conteo[j.voto] = (conteo[j.voto] || 0) + 1;
+        }
+    });
+
+    // Encontrar el máximo
+    let maxVotos = 0;
+    let expulsadoId = null;
+    let empate = false;
+
+    for (const [id, votos] of Object.entries(conteo)) {
+        if (votos > maxVotos) {
+            maxVotos = votos;
+            expulsadoId = id;
+            empate = false;
+        } else if (votos === maxVotos) {
+            empate = true;
+        }
+    }
+
+    // LÓGICA DE EXPULSIÓN
+    let nuevosJugadores = [...jugadores];
+    if (expulsadoId && !empate) {
+        nuevosJugadores = jugadores.map(j => {
+            if (j.id === expulsadoId) return { ...j, estado: 'ELIMINADO' };
+            return j;
+        });
+        // Podríamos mostrar un mensaje de quién se fue, pero por ahora pasamos directo
+    } 
+    // Si hay empate o nadie votó, nadie sale.
+
+    // CHECK VICTORIA
+    const vivosFinal = nuevosJugadores.filter(j => j.estado === 'VIVO');
+    const impostoresVivos = vivosFinal.filter(j => j.rol === 'IMPOSTOR').length;
+    const inocentesVivos = vivosFinal.filter(j => j.rol === 'NORMAL').length;
 
     let nuevoEstado = 'EN_JUEGO'; 
-
     if (impostoresVivos === 0) {
         nuevoEstado = 'VICTORIA_INOCENTE';
-    } 
-    else if (impostoresVivos >= inocentesVivos) {
+    } else if (impostoresVivos >= inocentesVivos) {
         nuevoEstado = 'VICTORIA_IMPOSTOR';
     }
+
+    // Resetear votos para la próxima
+    nuevosJugadores = nuevosJugadores.map(j => ({ ...j, voto: null }));
 
     await supabaseClient
         .from('salas')
@@ -495,11 +609,6 @@ async function ejecutarExpulsionHost(idVictima) {
             jugadores: nuevosJugadores
         })
         .eq('id', salaActual.id);
-}
-
-async function saltarVotacionHost() {
-    if (!esHost) return;
-    await supabaseClient.from('salas').update({ estado: 'EN_JUEGO' }).eq('id', salaActual.id);
 }
 
 // --- 5. PANTALLA FINAL ---
@@ -538,7 +647,7 @@ function mostrarPantallaVictoria(sala) {
 }
 
 async function reiniciarRondaHost() {
-    const jugadoresReset = salaActual.jugadores.map(j => ({ ...j, rol: 'PENDIENTE', estado: 'VIVO' }));
+    const jugadoresReset = salaActual.jugadores.map(j => ({ ...j, rol: 'PENDIENTE', estado: 'VIVO', voto: null }));
     await supabaseClient
         .from('salas')
         .update({ estado: 'ESPERA', tema: '', jugadores: jugadoresReset })

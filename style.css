@@ -239,3 +239,25 @@ button {
     background-color: #2ecc71 !important; /* Fondo Verde */
     color: white;
 }
+
+/* Estilo cuando seleccionas a alguien para votar */
+.btn-votar-jugador.seleccionado {
+    background-color: #3498db;
+    color: white;
+    border-color: #2980b9;
+    font-weight: bold;
+}
+
+/* Indicador de cuántos votos lleva alguien (visible solo al final o para host si quieres) */
+.badge-votos {
+    background-color: #fff;
+    color: #333;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.8em;
+    font-weight: bold;
+}
