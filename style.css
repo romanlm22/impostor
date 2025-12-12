@@ -338,3 +338,19 @@ button {
     font-family: inherit;
     box-sizing: border-box; /* Importante para que no se salga */
 }
+
+/* Imagen de la palabra en la pantalla de victoria */
+.imagen-revelada {
+    max-width: 100%;
+    max-height: 250px; /* Limita la altura */
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    margin: 15px auto; /* Centrado */
+    display: block;
+}
+
+/* Estilos para el nombre de la palabra final */
+#palabra-final {
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}

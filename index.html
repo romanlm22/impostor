@@ -119,11 +119,19 @@
         <div class="panel hidden" id="victoria-pantalla">
             <h1 id="titulo-victoria"></h1>
             <p id="subtitulo-victoria"></p>
+            
             <div class="card" id="revelacion-final">
-                <h3>La palabra era: <span id="palabra-final"></span></h3>
-                <div id="lista-impostores-revelados"></div>
+                <h3>La palabra era:</h3>
+                <h2 id="palabra-final" style="margin: 10px 0; color: #2c3e50; font-size: 2em;"></h2>
+                
+                <img id="imagen-palabra-final" src="" alt="Imagen de la palabra" class="imagen-revelada hidden">
+
+                <div id="lista-impostores-revelados" style="margin-top: 20px;"></div>
             </div>
-            <button onclick="reiniciarRondaHost()" id="btn-volver-sala" style="display: none;">🔄 Volver a Sala de Espera</button>
+
+            <button onclick="reiniciarRondaHost()" id="btn-volver-sala" style="display: none;">
+                🔄 Volver a Sala de Espera
+            </button>
         </div>
 
     </div>

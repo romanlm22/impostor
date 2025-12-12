@@ -6,16 +6,97 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// --- DATOS ---
+// --- IMÁGENES DE CATEGORÍAS (Para el menú) ---
+const categoryImages = {
+    futbol: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Soccerball.svg/120px-Soccerball.svg.png",
+    deportes: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/Basketball_Clipart.svg/120px-Basketball_Clipart.svg.png",
+    trabajos: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Briefcase_icon.svg/120px-Briefcase_icon.svg.png",
+    comida: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Good_Food_Display_-_NCI_Visuals_Online.jpg/120px-Good_Food_Display_-_NCI_Visuals_Online.jpg",
+    aleatorio: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Random_dice.svg/120px-Random_dice.svg.png",
+    vehiculos: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Car_icon.svg/120px-Car_icon.svg.png",
+    animales: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Cartoon_elephant_02.svg/120px-Cartoon_elephant_02.svg.png",
+    famosos: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Albert_Einstein_Head.jpg/120px-Albert_Einstein_Head.jpg",
+    GrupoRoman: null,
+    GrupoMaxi: null
+};
+
+// --- DATOS (PALABRAS CON IMÁGENES INDIVIDUALES) ---
+// ⚠️ REEMPLAZA LAS URLs DE EJEMPLO CON LAS TUYAS ⚠️
 const data = {
-    futbol: ["maradona", "pele", "Messi", "Cristiano Ronaldo", "Neymar", "Zidane", "Mbappé", "Ronaldinho"],
-    deportes: ["Tenis", "Baloncesto", "Nado", "Maratón", "Boxeo", "Golf", "Rugby"],
-    trabajos: ["Director de cine", "Cartero", "Chef", "Arquitecto", "Veterinario", "Programador", "Dentista"],
-    comida: ["Sopa", "Sushi", "Taco Mexicano", "Pizza Napolitana", "Hamburguesa", "chipa", "empanada"],
-    aleatorio: ["Arcoíris", "Montaña Rusa", "Telescopio", "Pirámide", "Canguro", "Robot", "Globo Aerostático", "Castillo de Arena", "asado", "bicicleta", "computadora", "guitarra", "helado", "jardín", "lago", "museo", "nube", "ópera", "parque", "queso", "robot", "safari", "tren", "universo", "volcán", "pizza", "hamburguesa", "yogurt", "camionjeta", "automóvil", "messi", "tenis", "chef", "sushi", "san martin", "delfin", "elefante", "belgrano", "duki", "paulo londra", "madonna"],
-    vehiculos: ["Automóvil", "Motocicleta", "Bicicleta", "Camión", "Avión", "Barco", "Tren"],
-    animales: ["Elefante", "Tigre", "Canguro", "Delfín", "Águila", "Serpiente", "Jirafa"],
-    famosos: ["Albert Einstein", "Marilyn Monroe", "Leonardo da Vinci", "Cleopatra", "William Shakespeare", "Frida Kahlo", "Brat Pit"],
+    futbol: [
+        { word: "Maradona", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Diego_Maradona_in_1986.jpg/245px-Diego_Maradona_in_1986.jpg" },
+        { word: "Pelé", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Pele_by_John_Mathew_Smith.jpg/220px-Pele_by_John_Mathew_Smith.jpg" },
+        { word: "Messi", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Lionel_Messi_20180626.jpg/245px-Lionel_Messi_20180626.jpg" },
+        { word: "Cristiano Ronaldo", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Cristiano_Ronaldo_2018.jpg/245px-Cristiano_Ronaldo_2018.jpg" },
+        { word: "Neymar", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Neymar_Jr._with_Brazil_national_team_in_2018.jpg/245px-Neymar_Jr._with_Brazil_national_team_in_2018.jpg" },
+        { word: "Zidane", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Zinedine_Zidane_by_Tasnim_03.jpg/245px-Zinedine_Zidane_by_Tasnim_03.jpg" },
+        { word: "Mbappé", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/2019-07-17_SG_Dynamo_Dresden_vs._Paris_Saint-Germain_by_Sandro_Halank%E2%80%93129_%28cropped%29.jpg/245px-2019-07-17_SG_Dynamo_Dresden_vs._Paris_Saint-Germain_by_Sandro_Halank%E2%80%93129_%28cropped%29.jpg" },
+        { word: "Ronaldinho", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Ronaldinho_07_2007.jpg/245px-Ronaldinho_07_2007.jpg" }
+    ],
+    deportes: [
+        { word: "Tenis", img: "https://via.placeholder.com/300x200?text=Tenis" },
+        { word: "Baloncesto", img: "https://via.placeholder.com/300x200?text=Baloncesto" },
+        { word: "Nado", img: "https://via.placeholder.com/300x200?text=Nado" },
+        { word: "Maratón", img: "https://via.placeholder.com/300x200?text=Maraton" },
+        { word: "Boxeo", img: "https://via.placeholder.com/300x200?text=Boxeo" },
+        { word: "Golf", img: "https://via.placeholder.com/300x200?text=Golf" },
+        { word: "Rugby", img: "https://via.placeholder.com/300x200?text=Rugby" }
+    ],
+    trabajos: [
+        { word: "Director de cine", img: "https://via.placeholder.com/300x200?text=Director" },
+        { word: "Cartero", img: "https://via.placeholder.com/300x200?text=Cartero" },
+        { word: "Chef", img: "https://via.placeholder.com/300x200?text=Chef" },
+        { word: "Arquitecto", img: "https://via.placeholder.com/300x200?text=Arquitecto" },
+        { word: "Veterinario", img: "https://via.placeholder.com/300x200?text=Veterinario" },
+        { word: "Programador", img: "https://via.placeholder.com/300x200?text=Programador" },
+        { word: "Dentista", img: "https://via.placeholder.com/300x200?text=Dentista" }
+    ],
+    comida: [
+        { word: "Sopa", img: "https://via.placeholder.com/300x200?text=Sopa" },
+        { word: "Sushi", img: "https://via.placeholder.com/300x200?text=Sushi" },
+        { word: "Taco Mexicano", img: "https://via.placeholder.com/300x200?text=Taco" },
+        { word: "Pizza Napolitana", img: "https://via.placeholder.com/300x200?text=Pizza" },
+        { word: "Hamburguesa", img: "https://via.placeholder.com/300x200?text=Hamburguesa" },
+        { word: "Chipa", img: "https://via.placeholder.com/300x200?text=Chipa" },
+        { word: "Empanada", img: "https://via.placeholder.com/300x200?text=Empanada" }
+    ],
+    // Para aleatorio, uso placeholders rápidos. Deberías poner imágenes reales.
+    aleatorio: [
+        { word: "Arcoíris", img: "https://via.placeholder.com/300x200?text=Arcoiris" },
+        { word: "Montaña Rusa", img: "https://via.placeholder.com/300x200?text=MontanaRusa" },
+        { word: "Telescopio", img: "https://via.placeholder.com/300x200?text=Telescopio" },
+        // ... (Añade el resto de tus palabras aleatorias con este formato {word: "", img: ""})
+        { word: "Asado", img: "https://via.placeholder.com/300x200?text=Asado" },
+        { word: "Guitarra", img: "https://via.placeholder.com/300x200?text=Guitarra" }
+    ],
+    vehiculos: [
+        { word: "Automóvil", img: "https://via.placeholder.com/300x200?text=Auto" },
+        { word: "Motocicleta", img: "https://via.placeholder.com/300x200?text=Moto" },
+        { word: "Bicicleta", img: "https://via.placeholder.com/300x200?text=Bici" },
+        { word: "Camión", img: "https://via.placeholder.com/300x200?text=Camion" },
+        { word: "Avión", img: "https://via.placeholder.com/300x200?text=Avion" },
+        { word: "Barco", img: "https://via.placeholder.com/300x200?text=Barco" },
+        { word: "Tren", img: "https://via.placeholder.com/300x200?text=Tren" }
+    ],
+    animales: [
+        { word: "Elefante", img: "https://via.placeholder.com/300x200?text=Elefante" },
+        { word: "Tigre", img: "https://via.placeholder.com/300x200?text=Tigre" },
+        { word: "Canguro", img: "https://via.placeholder.com/300x200?text=Canguro" },
+        { word: "Delfín", img: "https://via.placeholder.com/300x200?text=Delfin" },
+        { word: "Águila", img: "https://via.placeholder.com/300x200?text=Aguila" },
+        { word: "Serpiente", img: "https://via.placeholder.com/300x200?text=Serpiente" },
+        { word: "Jirafa", img: "https://via.placeholder.com/300x200?text=Jirafa" }
+    ],
+    famosos: [
+        { word: "Albert Einstein", img: "https://via.placeholder.com/300x200?text=Einstein" },
+        { word: "Marilyn Monroe", img: "https://via.placeholder.com/300x200?text=Marilyn" },
+        { word: "Leonardo da Vinci", img: "https://via.placeholder.com/300x200?text=DaVinci" },
+        { word: "Cleopatra", img: "https://via.placeholder.com/300x200?text=Cleopatra" },
+        { word: "William Shakespeare", img: "https://via.placeholder.com/300x200?text=Shakespeare" },
+        { word: "Frida Kahlo", img: "https://via.placeholder.com/300x200?text=Frida" },
+        { word: "Brad Pitt", img: "https://via.placeholder.com/300x200?text=BradPitt" }
+    ],
+    // Los grupos no tienen imágenes por palabra, solo texto.
     GrupoRoman: ["FABRICIO ", "BRUNO", "ARMANDO", "JERE", "DANTE", "LOLO", "JOACO", "MARIO", "Francici", "MAURO", "Juani"],
     GrupoMaxi: ["Maxi", "Agustin", "ExE", "PINI", "GERMAN", "FABRI", "GUSTAVO", "JOEL"],
 };
@@ -23,7 +104,7 @@ const data = {
 // --- ESTADO ---
 let salaActual = null;
 let nombreJugador = ''; 
-let categoriaSeleccionada = ''; // Solo se usa en la creación
+let categoriaSeleccionada = ''; 
 let esHost = false;
 let supabaseSubscription = null;
 let timerInterval = null;    
@@ -60,7 +141,7 @@ function mostrarPanelCrear() {
     nombreJugador = document.getElementById('nombre-jugador').value.trim();
     if (!nombreJugador) return alert('Por favor, ingresa tu nombre primero.');
     mostrarPanel('crear');
-    cargarCategoriasManuales(); // Cargar botones
+    cargarCategoriasManuales(); 
 }
 
 function mostrarPanelUnirse() {
@@ -71,33 +152,44 @@ function mostrarPanelUnirse() {
 
 // --- LÓGICA DE TABS EN CREAR SALA ---
 function cambiarTab(modo) {
-    // Ocultar contenidos
     document.getElementById('tab-aleatorio').classList.add('hidden');
     document.getElementById('tab-manual').classList.add('hidden');
     document.getElementById('tab-custom').classList.add('hidden');
-    
-    // Quitar active de botones
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
 
-    // Activar seleccionado
     document.getElementById(`tab-${modo}`).classList.remove('hidden');
-    // Encontrar el botón clickeado es un poco más manual sin pasar el evento, 
-    // pero podemos buscar por texto o índice. Hack simple:
     const btns = document.querySelectorAll('.tab-btn');
     if (modo === 'aleatorio') btns[0].classList.add('active');
     if (modo === 'manual') btns[1].classList.add('active');
     if (modo === 'custom') btns[2].classList.add('active');
 }
 
+// --- CARGAR CATEGORÍAS CON IMÁGENES EN EL MENÚ ---
 function cargarCategoriasManuales() {
     const contenedor = document.getElementById('lista-cats-manual');
     contenedor.innerHTML = '';
+    
     Object.keys(data).forEach(key => {
         const btn = document.createElement('button');
-        btn.textContent = key.toUpperCase();
-        btn.classList.add('categoria-btn');
+        btn.classList.add('categoria-btn', 'categoria-con-imagen'); 
+
+        const imgUrl = categoryImages[key];
+        if (imgUrl) {
+            const img = document.createElement('img');
+            img.src = imgUrl;
+            img.alt = key;
+            btn.appendChild(img);
+        } else {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'categoria-placeholder';
+            btn.appendChild(placeholder);
+        }
+
+        const span = document.createElement('span');
+        span.textContent = key.toUpperCase().replace(/_/g, ' '); 
+        btn.appendChild(span);
+
         btn.onclick = () => {
-            // Seleccionar visualmente
             contenedor.querySelectorAll('.categoria-btn').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
             categoriaSeleccionada = key;
@@ -119,7 +211,7 @@ function generarCodigo() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-// --- FUNCIÓN PRINCIPAL DE CREAR SALA (3 MODOS) ---
+// --- FUNCIÓN PRINCIPAL DE CREAR SALA ---
 async function crearSala(modo) {
     let catFinal = '';
     let listaPalabrasFinal = [];
@@ -143,9 +235,8 @@ async function crearSala(modo) {
         if (!nombre) return alert("Ponle nombre a tu categoría.");
         if (!palabrasRaw) return alert("Escribe algunas palabras.");
         
-        // Convertir texto a array
+        // Custom categories solo tienen texto por ahora
         const palabrasArray = palabrasRaw.split(',').map(p => p.trim()).filter(p => p.length > 0);
-        
         if (palabrasArray.length < 2) return alert("Necesitas al menos 2 palabras.");
         
         catFinal = nombre;
@@ -163,8 +254,9 @@ async function crearSala(modo) {
             estado: 'ESPERA',
             categoria: catFinal,
             modo_juego: modoJuego,
-            lista_palabras: listaPalabrasFinal, // Guardamos la lista en la BD
+            lista_palabras: listaPalabrasFinal, 
             tema: '', 
+            tema_imagen: null, // Iniciamos sin imagen
             jugadores: [{ id: jugadorId, nombre: nombreJugador, esHost: true, rol: 'PENDIENTE', estado: 'VIVO', voto: null }]
         })
         .select()
@@ -360,22 +452,32 @@ function mezclarArray(array) {
     return array;
 }
 
-// --- 1. INICIAR EL JUEGO (LÓGICA ACTUALIZADA) ---
+// --- 1. INICIAR EL JUEGO (CON SELECCIÓN DE IMAGEN) ---
 async function iniciarJuegoHost() {
     if (salaActual.jugadores.length < 3) return alert("Mínimo 3 jugadores.");
     
     let categoriaFinal = salaActual.categoria;
-    let palabrasFinales = salaActual.lista_palabras; // Usamos la lista de la BD
+    let palabrasFinales = salaActual.lista_palabras; 
 
-    // Si el modo es ALEATORIO, cambiamos la categoría y la lista ahora mismo
     if (salaActual.modo_juego === 'ALEATORIO') {
         const nuevaCat = obtenerCategoriaAleatoria();
         categoriaFinal = nuevaCat;
         palabrasFinales = data[nuevaCat];
     }
     
-    // Elegir palabra
-    const tema = palabrasFinales[Math.floor(Math.random() * palabrasFinales.length)];
+    // --- LÓGICA DE SELECCIÓN DE TEMA E IMAGEN ---
+    const itemElegido = palabrasFinales[Math.floor(Math.random() * palabrasFinales.length)];
+    let temaTexto = '';
+    let temaImagen = null;
+
+    // Verificamos si el ítem es un objeto (tiene imagen) o un string (solo texto, como los grupos)
+    if (typeof itemElegido === 'object' && itemElegido !== null) {
+        temaTexto = itemElegido.word;
+        temaImagen = itemElegido.img;
+    } else {
+        temaTexto = itemElegido; // Es un string directo
+        temaImagen = null;
+    }
     
     // Configurar Impostores
     const numJugadores = salaActual.jugadores.length;
@@ -395,14 +497,15 @@ async function iniciarJuegoHost() {
         }
     }
     
-    // GUARDAR TODO (Incluyendo nueva categoría si cambió)
+    // GUARDAR TODO EN SUPABASE (Incluyendo la imagen)
     await supabaseClient
         .from('salas')
         .update({
             estado: 'EN_JUEGO',
             categoria: categoriaFinal,
             lista_palabras: palabrasFinales,
-            tema: tema,
+            tema: temaTexto,
+            tema_imagen: temaImagen, // Guardamos la URL de la imagen
             jugadores: jugadoresAsignados 
         })
         .eq('id', salaActual.id);
@@ -629,7 +732,7 @@ async function procesarVotacionHost() {
         .eq('id', salaActual.id);
 }
 
-// --- 5. PANTALLA FINAL ---
+// --- 5. PANTALLA FINAL (CON IMAGEN REVELADA) ---
 function mostrarPantallaVictoria(sala) {
     mostrarPanel('victoria');
     
@@ -637,9 +740,20 @@ function mostrarPantallaVictoria(sala) {
     const subtitulo = document.getElementById('subtitulo-victoria');
     const panelVictoria = document.getElementById('victoria-pantalla');
     const palabraFinal = document.getElementById('palabra-final');
+    // NUEVO: Referencia a la imagen
+    const imagenFinal = document.getElementById('imagen-palabra-final');
     const listaImpostores = document.getElementById('lista-impostores-revelados');
     
     palabraFinal.textContent = sala.tema;
+
+    // NUEVO: Lógica para mostrar/ocultar la imagen
+    if (sala.tema_imagen) {
+        imagenFinal.src = sala.tema_imagen;
+        imagenFinal.classList.remove('hidden');
+    } else {
+        imagenFinal.src = '';
+        imagenFinal.classList.add('hidden');
+    }
 
     const nombresImpostores = sala.jugadores
         .filter(j => j.rol === 'IMPOSTOR')
@@ -668,7 +782,7 @@ async function reiniciarRondaHost() {
     const jugadoresReset = salaActual.jugadores.map(j => ({ ...j, rol: 'PENDIENTE', estado: 'VIVO', voto: null }));
     await supabaseClient
         .from('salas')
-        .update({ estado: 'ESPERA', tema: '', jugadores: jugadoresReset })
+        .update({ estado: 'ESPERA', tema: '', tema_imagen: null, jugadores: jugadoresReset })
         .eq('id', salaActual.id);
 }
 
