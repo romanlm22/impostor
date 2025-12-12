@@ -23,7 +23,7 @@ const data = {
 // --- ESTADO ---
 let salaActual = null;
 let nombreJugador = ''; 
-// 'categoriaSeleccionada' ya no se usa manualmente, se lee de la salaActual
+let categoriaSeleccionada = ''; // Solo se usa en la creación
 let esHost = false;
 let supabaseSubscription = null;
 let timerInterval = null;    
@@ -42,7 +42,7 @@ const pantallas = {
 };
 
 // =========================================================
-// I. GESTIÓN DE PANTALLAS
+// I. GESTIÓN DE PANTALLAS Y TABS
 // =========================================================
 
 function mostrarPanel(nombrePanel) {
@@ -60,6 +60,7 @@ function mostrarPanelCrear() {
     nombreJugador = document.getElementById('nombre-jugador').value.trim();
     if (!nombreJugador) return alert('Por favor, ingresa tu nombre primero.');
     mostrarPanel('crear');
+    cargarCategoriasManuales(); // Cargar botones
 }
 
 function mostrarPanelUnirse() {
@@ -68,7 +69,43 @@ function mostrarPanelUnirse() {
     mostrarPanel('unirse');
 }
 
-// Función auxiliar para elegir categoría al azar
+// --- LÓGICA DE TABS EN CREAR SALA ---
+function cambiarTab(modo) {
+    // Ocultar contenidos
+    document.getElementById('tab-aleatorio').classList.add('hidden');
+    document.getElementById('tab-manual').classList.add('hidden');
+    document.getElementById('tab-custom').classList.add('hidden');
+    
+    // Quitar active de botones
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+    // Activar seleccionado
+    document.getElementById(`tab-${modo}`).classList.remove('hidden');
+    // Encontrar el botón clickeado es un poco más manual sin pasar el evento, 
+    // pero podemos buscar por texto o índice. Hack simple:
+    const btns = document.querySelectorAll('.tab-btn');
+    if (modo === 'aleatorio') btns[0].classList.add('active');
+    if (modo === 'manual') btns[1].classList.add('active');
+    if (modo === 'custom') btns[2].classList.add('active');
+}
+
+function cargarCategoriasManuales() {
+    const contenedor = document.getElementById('lista-cats-manual');
+    contenedor.innerHTML = '';
+    Object.keys(data).forEach(key => {
+        const btn = document.createElement('button');
+        btn.textContent = key.toUpperCase();
+        btn.classList.add('categoria-btn');
+        btn.onclick = () => {
+            // Seleccionar visualmente
+            contenedor.querySelectorAll('.categoria-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            categoriaSeleccionada = key;
+        };
+        contenedor.appendChild(btn);
+    });
+}
+
 function obtenerCategoriaAleatoria() {
     const keys = Object.keys(data);
     return keys[Math.floor(Math.random() * keys.length)];
@@ -82,10 +119,40 @@ function generarCodigo() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-async function crearSala() {
-    // 1. Elegimos categoría automática inicial
-    const catInicial = obtenerCategoriaAleatoria();
-    
+// --- FUNCIÓN PRINCIPAL DE CREAR SALA (3 MODOS) ---
+async function crearSala(modo) {
+    let catFinal = '';
+    let listaPalabrasFinal = [];
+    let modoJuego = 'ALEATORIO';
+
+    if (modo === 'aleatorio') {
+        catFinal = obtenerCategoriaAleatoria();
+        listaPalabrasFinal = data[catFinal];
+        modoJuego = 'ALEATORIO';
+    } 
+    else if (modo === 'manual') {
+        if (!categoriaSeleccionada) return alert("Selecciona una categoría de la lista.");
+        catFinal = categoriaSeleccionada;
+        listaPalabrasFinal = data[catFinal];
+        modoJuego = 'FIJO';
+    } 
+    else if (modo === 'custom') {
+        const nombre = document.getElementById('input-custom-titulo').value.trim();
+        const palabrasRaw = document.getElementById('input-custom-palabras').value.trim();
+        
+        if (!nombre) return alert("Ponle nombre a tu categoría.");
+        if (!palabrasRaw) return alert("Escribe algunas palabras.");
+        
+        // Convertir texto a array
+        const palabrasArray = palabrasRaw.split(',').map(p => p.trim()).filter(p => p.length > 0);
+        
+        if (palabrasArray.length < 2) return alert("Necesitas al menos 2 palabras.");
+        
+        catFinal = nombre;
+        listaPalabrasFinal = palabrasArray;
+        modoJuego = 'FIJO';
+    }
+
     const codigo = generarCodigo();
     const jugadorId = Date.now().toString(36);
 
@@ -94,7 +161,9 @@ async function crearSala() {
         .insert({
             codigo: codigo,
             estado: 'ESPERA',
-            categoria: catInicial, // Se guarda en BD
+            categoria: catFinal,
+            modo_juego: modoJuego,
+            lista_palabras: listaPalabrasFinal, // Guardamos la lista en la BD
             tema: '', 
             jugadores: [{ id: jugadorId, nombre: nombreJugador, esHost: true, rol: 'PENDIENTE', estado: 'VIVO', voto: null }]
         })
@@ -103,13 +172,13 @@ async function crearSala() {
 
     if (error) {
         console.error('Error:', error);
-        return alert('Error al crear sala.');
+        return alert('Error al crear sala. Asegúrate de haber ejecutado el SQL nuevo en Supabase.');
     }
 
     salaActual = nuevaSala;
     esHost = true;
     
-    mostrarSalaEspera(codigo, catInicial);
+    mostrarSalaEspera(codigo, catFinal);
     iniciarSuscripcionSala(codigo);
 }
 
@@ -182,7 +251,7 @@ function volverAlInicio() {
 function mostrarSalaEspera(codigo, categoria) {
     mostrarPanel('sala');
     document.getElementById('codigo-sala-display').textContent = codigo;
-    document.getElementById('categoria-sala-display').textContent = `Categoría Actual: ${categoria.toUpperCase()}`;
+    document.getElementById('categoria-sala-display').textContent = `Categoría: ${categoria.toUpperCase()}`;
 }
 
 // =========================================================
@@ -212,9 +281,8 @@ function manejarCambioSala(nuevaSala) {
 
     actualizarListaJugadores(nuevaSala.jugadores);
     
-    // Si cambia la categoría (porque el host inició ronda nueva), actualizar texto en espera
     if (nuevaSala.estado === 'ESPERA') {
-        document.getElementById('categoria-sala-display').textContent = `Categoría Actual: ${nuevaSala.categoria.toUpperCase()}`;
+        document.getElementById('categoria-sala-display').textContent = `Categoría: ${nuevaSala.categoria.toUpperCase()}`;
     }
 
     switch (nuevaSala.estado) {
@@ -292,16 +360,24 @@ function mezclarArray(array) {
     return array;
 }
 
-// --- 1. INICIAR EL JUEGO AUTOMÁTICO ---
+// --- 1. INICIAR EL JUEGO (LÓGICA ACTUALIZADA) ---
 async function iniciarJuegoHost() {
     if (salaActual.jugadores.length < 3) return alert("Mínimo 3 jugadores.");
     
-    // 1. ELEGIR NUEVA CATEGORÍA Y PALABRA AL AZAR
-    const nuevaCategoria = obtenerCategoriaAleatoria();
-    const temas = data[nuevaCategoria]; 
-    const tema = temas[Math.floor(Math.random() * temas.length)];
+    let categoriaFinal = salaActual.categoria;
+    let palabrasFinales = salaActual.lista_palabras; // Usamos la lista de la BD
+
+    // Si el modo es ALEATORIO, cambiamos la categoría y la lista ahora mismo
+    if (salaActual.modo_juego === 'ALEATORIO') {
+        const nuevaCat = obtenerCategoriaAleatoria();
+        categoriaFinal = nuevaCat;
+        palabrasFinales = data[nuevaCat];
+    }
     
-    // 2. CONFIGURAR IMPOSTORES
+    // Elegir palabra
+    const tema = palabrasFinales[Math.floor(Math.random() * palabrasFinales.length)];
+    
+    // Configurar Impostores
     const numJugadores = salaActual.jugadores.length;
     let numImpostores = 1;
     if (numJugadores > 5 && numJugadores <= 10) numImpostores = 2;
@@ -319,12 +395,13 @@ async function iniciarJuegoHost() {
         }
     }
     
-    // 3. ACTUALIZAR TODO EN LA BD
+    // GUARDAR TODO (Incluyendo nueva categoría si cambió)
     await supabaseClient
         .from('salas')
         .update({
             estado: 'EN_JUEGO',
-            categoria: nuevaCategoria, // ¡Actualizamos la categoría aquí!
+            categoria: categoriaFinal,
+            lista_palabras: palabrasFinales,
             tema: tema,
             jugadores: jugadoresAsignados 
         })
@@ -343,7 +420,6 @@ function asignarRolLocal(temaGlobal, jugadores, yo) {
     }
 
     mostrarPanel('rol');
-    // Leemos la categoría directamente de la sala actualizada
     document.getElementById('display-categoria-rol').textContent = salaActual.categoria.toUpperCase();
 
     const rolNombre = document.getElementById('rol-nombre');
@@ -419,7 +495,6 @@ function mostrarPantallaVotacion(jugadores, yo) {
     mostrarPanel('votacion');
     if (timerInterval) clearInterval(timerInterval);
     
-    // Timer de votación (30 segundos)
     if (votingInterval) clearInterval(votingInterval);
     let timeLeft = 150;
     const timerDisplay = document.getElementById('voting-timer-display');
@@ -430,9 +505,7 @@ function mostrarPantallaVotacion(jugadores, yo) {
         timerDisplay.textContent = timeLeft;
         if (timeLeft <= 0) {
             clearInterval(votingInterval);
-            if (esHost) {
-                procesarVotacionHost();
-            }
+            if (esHost) procesarVotacionHost();
         }
     }, 1000);
 
@@ -463,7 +536,6 @@ function mostrarPantallaVotacion(jugadores, yo) {
             btn.disabled = true;
             btn.style.opacity = 0.6;
         }
-
         container.appendChild(btn);
     });
 
@@ -489,7 +561,6 @@ async function registrarVoto(idDestino) {
     if (salaActual.estado !== 'VOTANDO') return;
     
     const { data: salaFresca } = await supabaseClient.from('salas').select('jugadores').eq('id', salaActual.id).single();
-    
     if (salaFresca) {
         const jugadoresActualizados = salaFresca.jugadores.map(j => {
             if (j.nombre === nombreJugador) return { ...j, voto: idDestino };
@@ -501,7 +572,6 @@ async function registrarVoto(idDestino) {
 
 async function procesarVotacionHost() {
     if (!esHost) return;
-    
     if (votingInterval) clearInterval(votingInterval);
 
     const { data: sala } = await supabaseClient.from('salas').select('*').eq('id', salaActual.id).single();

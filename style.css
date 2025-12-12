@@ -300,3 +300,41 @@ button {
     border-color: #2980b9;
     font-weight: bold;
 }
+
+/* Pestañas de creación */
+.tabs-creacion {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #ecf0f1;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 1em;
+    color: #7f8c8d;
+    border-bottom: 3px solid transparent;
+}
+
+.tab-btn.active {
+    color: #3498db;
+    border-bottom: 3px solid #3498db;
+    font-weight: bold;
+}
+
+.tab-btn:hover {
+    color: #3498db;
+}
+
+.input-custom {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #bdc3c7;
+    border-radius: 5px;
+    font-family: inherit;
+    box-sizing: border-box; /* Importante para que no se salga */
+}
