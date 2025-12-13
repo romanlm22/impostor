@@ -6,22 +6,8 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// --- IMÁGENES DE CATEGORÍAS (Para el menú) ---
-const categoryImages = {
-    futbol: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Soccerball.svg/120px-Soccerball.svg.png",
-    deportes: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/Basketball_Clipart.svg/120px-Basketball_Clipart.svg.png",
-    trabajos: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Briefcase_icon.svg/120px-Briefcase_icon.svg.png",
-    comida: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Good_Food_Display_-_NCI_Visuals_Online.jpg/120px-Good_Food_Display_-_NCI_Visuals_Online.jpg",
-    aleatorio: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Random_dice.svg/120px-Random_dice.svg.png",
-    vehiculos: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Car_icon.svg/120px-Car_icon.svg.png",
-    animales: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Cartoon_elephant_02.svg/120px-Cartoon_elephant_02.svg.png",
-    famosos: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Albert_Einstein_Head.jpg/120px-Albert_Einstein_Head.jpg",
-    GrupoRoman: null,
-    GrupoMaxi: null,
-};
-
-// --- DATOS (PALABRAS CON IMÁGENES INDIVIDUALES) ---
-// ⚠️ REEMPLAZA LAS URLs DE EJEMPLO CON LAS TUYAS ⚠️
+// --- DATOS (PALABRAS CON IMÁGENES) ---
+// Las categorías ya NO tienen imágenes asociadas, solo las palabras individuales.
 const data = {
     futbol: [
         { word: "Maradona", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Diego_Maradona_in_1986.jpg/245px-Diego_Maradona_in_1986.jpg" },
@@ -60,12 +46,10 @@ const data = {
         { word: "Chipa", img: "https://via.placeholder.com/300x200?text=Chipa" },
         { word: "Empanada", img: "https://via.placeholder.com/300x200?text=Empanada" }
     ],
-    // Para aleatorio, uso placeholders rápidos. Deberías poner imágenes reales.
     aleatorio: [
         { word: "Arcoíris", img: "https://via.placeholder.com/300x200?text=Arcoiris" },
         { word: "Montaña Rusa", img: "https://via.placeholder.com/300x200?text=MontanaRusa" },
         { word: "Telescopio", img: "https://via.placeholder.com/300x200?text=Telescopio" },
-        // ... (Añade el resto de tus palabras aleatorias con este formato {word: "", img: ""})
         { word: "Asado", img: "https://via.placeholder.com/300x200?text=Asado" },
         { word: "Guitarra", img: "https://via.placeholder.com/300x200?text=Guitarra" }
     ],
@@ -96,7 +80,6 @@ const data = {
         { word: "Frida Kahlo", img: "https://via.placeholder.com/300x200?text=Frida" },
         { word: "Brad Pitt", img: "https://via.placeholder.com/300x200?text=BradPitt" }
     ],
-    // Los grupos no tienen imágenes por palabra, solo texto.
     GrupoRoman: ["FABRICIO ", "BRUNO", "ARMANDO", "JERE", "DANTE", "LOLO", "JOACO", "MARIO", "Francici", "MAURO", "Juani"],
     GrupoMaxi: ["Maxi", "Agustin", "ExE", "PINI", "GERMAN", "FABRI", "GUSTAVO", "JOEL"],
 };
@@ -150,7 +133,6 @@ function mostrarPanelUnirse() {
     mostrarPanel('unirse');
 }
 
-// --- LÓGICA DE TABS EN CREAR SALA ---
 function cambiarTab(modo) {
     document.getElementById('tab-aleatorio').classList.add('hidden');
     document.getElementById('tab-manual').classList.add('hidden');
@@ -164,26 +146,14 @@ function cambiarTab(modo) {
     if (modo === 'custom') btns[2].classList.add('active');
 }
 
-// --- CARGAR CATEGORÍAS CON IMÁGENES EN EL MENÚ ---
+// --- CARGAR CATEGORÍAS MANUALES (SOLO TEXTO, SIN IMÁGENES) ---
 function cargarCategoriasManuales() {
     const contenedor = document.getElementById('lista-cats-manual');
     contenedor.innerHTML = '';
     
     Object.keys(data).forEach(key => {
         const btn = document.createElement('button');
-        btn.classList.add('categoria-btn', 'categoria-con-imagen'); 
-
-        const imgUrl = categoryImages[key];
-        if (imgUrl) {
-            const img = document.createElement('img');
-            img.src = imgUrl;
-            img.alt = key;
-            btn.appendChild(img);
-        } else {
-            const placeholder = document.createElement('div');
-            placeholder.className = 'categoria-placeholder';
-            btn.appendChild(placeholder);
-        }
+        btn.classList.add('categoria-btn'); // Estilo simple
 
         const span = document.createElement('span');
         span.textContent = key.toUpperCase().replace(/_/g, ' '); 
@@ -211,7 +181,6 @@ function generarCodigo() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-// --- FUNCIÓN PRINCIPAL DE CREAR SALA ---
 async function crearSala(modo) {
     let catFinal = '';
     let listaPalabrasFinal = [];
@@ -235,7 +204,6 @@ async function crearSala(modo) {
         if (!nombre) return alert("Ponle nombre a tu categoría.");
         if (!palabrasRaw) return alert("Escribe algunas palabras.");
         
-        // Custom categories solo tienen texto por ahora
         const palabrasArray = palabrasRaw.split(',').map(p => p.trim()).filter(p => p.length > 0);
         if (palabrasArray.length < 2) return alert("Necesitas al menos 2 palabras.");
         
@@ -256,7 +224,7 @@ async function crearSala(modo) {
             modo_juego: modoJuego,
             lista_palabras: listaPalabrasFinal, 
             tema: '', 
-            tema_imagen: null, // Iniciamos sin imagen
+            tema_imagen: null, 
             jugadores: [{ id: jugadorId, nombre: nombreJugador, esHost: true, rol: 'PENDIENTE', estado: 'VIVO', voto: null }]
         })
         .select()
@@ -264,7 +232,7 @@ async function crearSala(modo) {
 
     if (error) {
         console.error('Error:', error);
-        return alert('Error al crear sala. Asegúrate de haber ejecutado el SQL nuevo en Supabase.');
+        return alert('Error al crear sala.');
     }
 
     salaActual = nuevaSala;
@@ -309,15 +277,27 @@ async function unirseSala() {
     iniciarSuscripcionSala(codigo);
 }
 
+// --- LÓGICA DE MIGRACIÓN DE HOST ---
+// Si el Host sale, el siguiente en la lista se convierte en Host.
 async function salirDeSala() {
     if (!salaActual) return;
     if (confirm("¿Seguro que quieres salir?")) {
-        if (esHost) {
+        
+        let nuevosJugadores = salaActual.jugadores.filter(j => j.nombre !== nombreJugador);
+        
+        // Si yo era el Host, necesitamos asignar uno nuevo
+        if (esHost && nuevosJugadores.length > 0) {
+            nuevosJugadores[0].esHost = true; // El primero de la lista hereda el trono
+        }
+
+        if (nuevosJugadores.length === 0) {
+            // Si era el último, borramos la sala
             await supabaseClient.from('salas').delete().eq('id', salaActual.id);
         } else {
-            const nuevosJugadores = salaActual.jugadores.filter(j => j.nombre !== nombreJugador);
+            // Si quedan jugadores, actualizamos la lista
             await supabaseClient.from('salas').update({ jugadores: nuevosJugadores }).eq('id', salaActual.id);
         }
+        
         volverAlInicio();
     }
 }
@@ -361,7 +341,7 @@ function iniciarSuscripcionSala(codigo) {
         )
         .on('postgres_changes',
             { event: 'DELETE', schema: 'public', table: 'salas', filter: `codigo=eq.${codigo}` },
-            () => { alert("El Host cerró la sala."); volverAlInicio(); }
+            () => { alert("La sala ha sido cerrada."); volverAlInicio(); }
         )
         .subscribe();
 }
@@ -371,10 +351,16 @@ function manejarCambioSala(nuevaSala) {
     const yo = nuevaSala.jugadores.find(j => j.nombre === nombreJugador);
     if (!yo) { alert("Has sido expulsado."); volverAlInicio(); return; }
 
+    // Actualizar si soy Host (por si hubo migración)
+    esHost = yo.esHost;
+
     actualizarListaJugadores(nuevaSala.jugadores);
     
     if (nuevaSala.estado === 'ESPERA') {
         document.getElementById('categoria-sala-display').textContent = `Categoría: ${nuevaSala.categoria.toUpperCase()}`;
+        // Asegurar visibilidad de controles si acabo de convertirme en Host
+        document.getElementById('host-controls-categoria').style.display = esHost ? 'block' : 'none';
+        document.getElementById('iniciar-juego-btn').style.display = (esHost && nuevaSala.jugadores.length >= 3) ? 'block' : 'none';
     }
 
     switch (nuevaSala.estado) {
@@ -452,7 +438,7 @@ function mezclarArray(array) {
     return array;
 }
 
-// --- 1. INICIAR EL JUEGO (CON SELECCIÓN DE IMAGEN) ---
+// --- 1. INICIAR EL JUEGO ---
 async function iniciarJuegoHost() {
     if (salaActual.jugadores.length < 3) return alert("Mínimo 3 jugadores.");
     
@@ -465,21 +451,18 @@ async function iniciarJuegoHost() {
         palabrasFinales = data[nuevaCat];
     }
     
-    // --- LÓGICA DE SELECCIÓN DE TEMA E IMAGEN ---
     const itemElegido = palabrasFinales[Math.floor(Math.random() * palabrasFinales.length)];
     let temaTexto = '';
     let temaImagen = null;
 
-    // Verificamos si el ítem es un objeto (tiene imagen) o un string (solo texto, como los grupos)
     if (typeof itemElegido === 'object' && itemElegido !== null) {
         temaTexto = itemElegido.word;
         temaImagen = itemElegido.img;
     } else {
-        temaTexto = itemElegido; // Es un string directo
+        temaTexto = itemElegido;
         temaImagen = null;
     }
     
-    // Configurar Impostores
     const numJugadores = salaActual.jugadores.length;
     let numImpostores = 1;
     if (numJugadores > 5 && numJugadores <= 10) numImpostores = 2;
@@ -497,7 +480,6 @@ async function iniciarJuegoHost() {
         }
     }
     
-    // GUARDAR TODO EN SUPABASE (Incluyendo la imagen)
     await supabaseClient
         .from('salas')
         .update({
@@ -505,7 +487,7 @@ async function iniciarJuegoHost() {
             categoria: categoriaFinal,
             lista_palabras: palabrasFinales,
             tema: temaTexto,
-            tema_imagen: temaImagen, // Guardamos la URL de la imagen
+            tema_imagen: temaImagen, 
             jugadores: jugadoresAsignados 
         })
         .eq('id', salaActual.id);
@@ -582,7 +564,7 @@ function iniciarTimerVisual() {
 }
 
 // =========================================================
-// V. VOTACIÓN
+// V. VOTACIÓN (150 SEGUNDOS)
 // =========================================================
 
 async function activarFaseVotacionHost() {
@@ -598,8 +580,9 @@ function mostrarPantallaVotacion(jugadores, yo) {
     mostrarPanel('votacion');
     if (timerInterval) clearInterval(timerInterval);
     
+    // --- TIMER AUMENTADO A 150 SEGUNDOS ---
     if (votingInterval) clearInterval(votingInterval);
-    let timeLeft = 150;
+    let timeLeft = 150; 
     const timerDisplay = document.getElementById('voting-timer-display');
     timerDisplay.textContent = timeLeft;
 
@@ -732,7 +715,7 @@ async function procesarVotacionHost() {
         .eq('id', salaActual.id);
 }
 
-// --- 5. PANTALLA FINAL (CON IMAGEN REVELADA) ---
+// --- 5. PANTALLA FINAL ---
 function mostrarPantallaVictoria(sala) {
     mostrarPanel('victoria');
     
@@ -740,13 +723,11 @@ function mostrarPantallaVictoria(sala) {
     const subtitulo = document.getElementById('subtitulo-victoria');
     const panelVictoria = document.getElementById('victoria-pantalla');
     const palabraFinal = document.getElementById('palabra-final');
-    // NUEVO: Referencia a la imagen
     const imagenFinal = document.getElementById('imagen-palabra-final');
     const listaImpostores = document.getElementById('lista-impostores-revelados');
     
     palabraFinal.textContent = sala.tema;
 
-    // NUEVO: Lógica para mostrar/ocultar la imagen
     if (sala.tema_imagen) {
         imagenFinal.src = sala.tema_imagen;
         imagenFinal.classList.remove('hidden');

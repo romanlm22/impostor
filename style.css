@@ -354,3 +354,26 @@ button {
     text-transform: uppercase;
     letter-spacing: 1px;
 }
+
+/* Botones de categoría simples (Texto grande) */
+.categoria-btn {
+    padding: 15px 20px;
+    font-size: 1.1em;
+    font-weight: bold;
+    text-transform: uppercase;
+    /* Sin flex ni imagenes */
+    text-align: center;
+}
+
+/* Imagen SOLO para la palabra final revelada */
+.imagen-revelada {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    margin: 20px auto;
+    display: block;
+    object-fit: contain;
+}
+
+/* El resto de tus estilos (btn-salir, grid-votos, etc.) se mantienen igual */
