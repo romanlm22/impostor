@@ -613,7 +613,7 @@ function asignarRolLocal(temaGlobal, jugadores, yo) {
     const cuentaReg = document.getElementById('cuenta-regresiva-rol');
     const rolCard = document.getElementById('rol-asignado');
 
-    // Muestra la categoría SIEMPRE
+    // CATEGORÍA FIJA
     document.getElementById('display-categoria-rol').textContent = salaActual.categoria.toUpperCase();
 
     if (yo.rol === 'IMPOSTOR') {
@@ -637,6 +637,9 @@ function asignarRolLocal(temaGlobal, jugadores, yo) {
             document.getElementById('online-game-controls').classList.remove('hidden');
             document.getElementById('en-persona-game-controls').classList.add('hidden');
             
+            // Display de categoría en pantalla de juego
+            document.getElementById('display-categoria-juego').textContent = salaActual.categoria.toUpperCase();
+
             document.getElementById('palabra-clave-visible').textContent = yo.rol === 'IMPOSTOR' ? "ERES EL IMPOSTOR" : temaGlobal.toUpperCase();
             document.getElementById('palabra-clave-visible').style.color = yo.rol === 'IMPOSTOR' ? "#e74c3c" : "#2ecc71";
             
@@ -651,7 +654,6 @@ function asignarRolLocal(temaGlobal, jugadores, yo) {
             actualizarListaOrdenJuego(jugadores);
             iniciarTimerVisual();
             document.getElementById('btn-activar-voto').style.display = esHost ? 'block' : 'none';
-            // Añadir botón de Nueva Ronda
             setupBotonNuevaRonda();
         }
     }, 1000);
@@ -671,16 +673,19 @@ function mostrarPantallaJuegoEnPersona(sala) {
     document.getElementById('online-game-controls').classList.add('hidden');
     document.getElementById('en-persona-game-controls').classList.remove('hidden');
 
+    // Display de categoría en pantalla de juego
+    document.getElementById('display-categoria-juego').textContent = sala.categoria.toUpperCase();
+
     document.getElementById('palabra-clave-visible').textContent = "¡MIRA TU ROL!";
     document.getElementById('palabra-clave-visible').style.color = "#3498db";
     document.getElementById('img-pista-juego').classList.add('hidden');
     document.getElementById('display-rol-en-persona').classList.add('hidden');
     document.getElementById('btn-siguiente-jugador').classList.add('hidden');
+    
     document.getElementById('btn-desbloquear-rol').disabled = false;
     document.getElementById('btn-desbloquear-rol').textContent = "👁️ Desbloquear Mi Rol";
     document.getElementById('timer-display').textContent = "2:30"; 
 
-    // Ocultar botón de nueva ronda mientras se muestran los roles
     removeBotonNuevaRonda();
 
     const vivos = jugadoresEnPersona.filter(j => j.estado === 'VIVO');
@@ -728,7 +733,7 @@ function desbloquearRolEnPersona() {
     const rolInstr = document.getElementById('rol-instruccion-en-persona');
     const imgPista = document.getElementById('img-pista-en-persona');
 
-    // Muestra la categoría SIEMPRE
+    // CATEGORÍA FIJA
     document.getElementById('display-categoria-rol').textContent = salaActual.categoria.toUpperCase();
 
     // 1. Mostrar el rol
@@ -792,6 +797,9 @@ function mostrarPantallaDebateEnPersona() {
     document.getElementById('online-game-controls').classList.remove('hidden'); 
     document.getElementById('en-persona-game-controls').classList.add('hidden');
     
+    // Display de categoría en pantalla de juego
+    document.getElementById('display-categoria-juego').textContent = salaActual.categoria.toUpperCase();
+
     // OCULTAR PALABRA CLAVE durante el debate
     document.getElementById('palabra-clave-visible').textContent = "DEBATE EN CURSO";
     document.getElementById('palabra-clave-visible').style.color = "#e74c3c"; 
@@ -1097,7 +1105,6 @@ function setupBotonNuevaRonda() {
         btnNuevaRonda.textContent = '🔄 Reiniciar/Nueva Ronda';
         btnNuevaRonda.className = 'secondary';
         btnNuevaRonda.onclick = reiniciarRondaHost;
-        // Insertar después del botón de Iniciar Votación (online) o donde está el timer
         document.getElementById('online-game-controls').appendChild(btnNuevaRonda);
     } else {
         btnNuevaRonda.style.display = 'block';
