@@ -91,7 +91,6 @@ let esHost = false;
 let supabaseSubscription = null;
 let timerInterval = null;    
 let votingInterval = null;
-// Variable para trackear qué pestaña está activa en el lobby
 let activeLobbyTab = 'aleatorio'; 
 
 // --- DOM ---
@@ -133,20 +132,16 @@ function mostrarPanelUnirse() {
     mostrarPanel('unirse');
 }
 
-// --- TABS DEL LOBBY ---
 function cambiarTabLobby(modo) {
-    activeLobbyTab = modo; // Guardamos estado para cuando se inicie el juego
-
+    activeLobbyTab = modo; 
     document.getElementById('lobby-tab-aleatorio').classList.add('hidden');
     document.getElementById('lobby-tab-manual').classList.add('hidden');
     document.getElementById('lobby-tab-custom').classList.add('hidden');
     
-    // Quitar active class de todos los botones
     document.getElementById('btn-tab-aleatorio').classList.remove('active');
     document.getElementById('btn-tab-manual').classList.remove('active');
     document.getElementById('btn-tab-custom').classList.remove('active');
 
-    // Activar el seleccionado
     document.getElementById(`lobby-tab-${modo}`).classList.remove('hidden');
     document.getElementById(`btn-tab-${modo}`).classList.add('active');
 }
@@ -157,12 +152,10 @@ function cargarCategoriasManuales() {
     
     Object.keys(data).forEach(key => {
         const btn = document.createElement('button');
-        btn.classList.add('categoria-btn'); // Estilo simple texto
-
+        btn.classList.add('categoria-btn'); 
         const span = document.createElement('span');
         span.textContent = key.toUpperCase().replace(/_/g, ' '); 
         btn.appendChild(span);
-
         btn.onclick = () => {
             contenedor.querySelectorAll('.categoria-btn').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
@@ -185,7 +178,6 @@ function generarCodigo() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-// Crear sala solo inicializa. La config real se hace en el lobby.
 async function crearSala() {
     const codigo = generarCodigo();
     const jugadorId = Date.now().toString(36);
@@ -213,7 +205,6 @@ async function crearSala() {
     salaActual = nuevaSala;
     esHost = true;
     
-    // Al crear, cargamos las categorías en el DOM por si quiere cambiar a manual
     cargarCategoriasManuales();
     mostrarSalaEspera(codigo, "ALEATORIO");
     iniciarSuscripcionSala(codigo);
@@ -254,23 +245,19 @@ async function unirseSala() {
     iniciarSuscripcionSala(codigo);
 }
 
-// --- SALIR DE SALA (Con migración de Host) ---
 async function salirDeSala() {
     if (!salaActual) return;
     if (confirm("¿Seguro que quieres salir?")) {
         
         let nuevosJugadores = salaActual.jugadores.filter(j => j.nombre !== nombreJugador);
         
-        // Si yo era Host, pasamos el liderazgo al siguiente
         if (esHost && nuevosJugadores.length > 0) {
             nuevosJugadores[0].esHost = true; 
         }
 
         if (nuevosJugadores.length === 0) {
-            // Si no queda nadie, borrar sala
             await supabaseClient.from('salas').delete().eq('id', salaActual.id);
         } else {
-            // Actualizar lista
             await supabaseClient.from('salas').update({ jugadores: nuevosJugadores }).eq('id', salaActual.id);
         }
         
@@ -301,14 +288,12 @@ function mostrarSalaEspera(codigo, categoria) {
     document.getElementById('codigo-sala-display').textContent = codigo;
     document.getElementById('categoria-sala-display').textContent = `Categoría: ${categoria.toUpperCase()}`;
     
-    // Controles de Host
     const controls = document.getElementById('host-controls-area');
     const playerView = document.getElementById('player-view-area');
     
     if (esHost) {
         controls.style.display = 'block';
         playerView.style.display = 'none';
-        // Asegurarnos que las categorías estén cargadas
         if (document.getElementById('lista-cats-manual').children.length === 0) {
             cargarCategoriasManuales();
         }
@@ -343,9 +328,7 @@ function manejarCambioSala(nuevaSala) {
     const yo = nuevaSala.jugadores.find(j => j.nombre === nombreJugador);
     if (!yo) { alert("Has sido expulsado."); volverAlInicio(); return; }
 
-    // Actualizar si soy Host
     esHost = yo.esHost;
-
     actualizarListaJugadores(nuevaSala.jugadores);
     
     if (nuevaSala.estado === 'ESPERA') {
@@ -427,14 +410,14 @@ function mezclarArray(array) {
     return array;
 }
 
-// --- 1. INICIAR EL JUEGO (LEE LOS CONTROLES DEL LOBBY) ---
+// --- 1. INICIAR EL JUEGO ---
 async function iniciarJuegoHost() {
     if (salaActual.jugadores.length < 3) return alert("Mínimo 3 jugadores.");
     
     let catFinal = '';
     let listaPalabrasFinal = [];
 
-    // Leemos qué pestaña está activa en el DOM
+    // Configuración desde el Lobby
     if (activeLobbyTab === 'aleatorio') {
         const nuevaCat = obtenerCategoriaAleatoria();
         catFinal = nuevaCat;
@@ -459,7 +442,6 @@ async function iniciarJuegoHost() {
         listaPalabrasFinal = palabrasArray;
     }
     
-    // Elegir tema
     const itemElegido = listaPalabrasFinal[Math.floor(Math.random() * listaPalabrasFinal.length)];
     let temaTexto = '';
     let temaImagen = null;
@@ -472,7 +454,6 @@ async function iniciarJuegoHost() {
         temaImagen = null;
     }
     
-    // Configurar Impostores
     const numJugadores = salaActual.jugadores.length;
     let numImpostores = 1;
     if (numJugadores > 5 && numJugadores <= 10) numImpostores = 2;
@@ -490,7 +471,6 @@ async function iniciarJuegoHost() {
         }
     }
     
-    // Guardar
     await supabaseClient
         .from('salas')
         .update({
@@ -572,7 +552,7 @@ function asignarRolLocal(temaGlobal, jugadores, yo) {
 
 function iniciarTimerVisual() {
     if (timerInterval) clearInterval(timerInterval);
-    let tiempo = 60; 
+    let tiempo = 150; // TIEMPO DE DEBATE 150s
     const display = document.getElementById('timer-display');
     
     timerInterval = setInterval(() => {
@@ -581,12 +561,18 @@ function iniciarTimerVisual() {
         let sec = tiempo % 60;
         display.textContent = `${min}:${sec < 10 ? '0' : ''}${sec}`;
         
-        if (tiempo <= 0) clearInterval(timerInterval);
+        if (tiempo <= 0) {
+            clearInterval(timerInterval);
+            // PASO AUTOMÁTICO A VOTACIÓN SI SOY HOST
+            if (esHost) {
+                activarFaseVotacionHost();
+            }
+        }
     }, 1000);
 }
 
 // =========================================================
-// V. VOTACIÓN (150 SEGUNDOS)
+// V. VOTACIÓN
 // =========================================================
 
 async function activarFaseVotacionHost() {
@@ -603,7 +589,7 @@ function mostrarPantallaVotacion(jugadores, yo) {
     if (timerInterval) clearInterval(timerInterval);
     
     if (votingInterval) clearInterval(votingInterval);
-    let timeLeft = 150; // TIEMPO ACTUALIZADO
+    let timeLeft = 150; 
     const timerDisplay = document.getElementById('voting-timer-display');
     timerDisplay.textContent = timeLeft;
 
