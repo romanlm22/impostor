@@ -172,7 +172,7 @@ function cargarCategoriasManuales() {
 }
 
 function obtenerCategoriaAleatoria() {
-    const keys = Object.keys(data).filter(key => !key.startsWith('Grupo')); // Excluir grupos
+    const keys = Object.keys(data).filter(key => !key.startsWith('Grupo')); 
     return keys[Math.floor(Math.random() * keys.length)];
 }
 
@@ -203,7 +203,6 @@ async function crearSala() {
             estado: 'VIVO', 
             voto: null
         }));
-        // Solo el host real para Supabase
         jugadoresIniciales = [{ id: Date.now().toString(36), nombre: nombreJugador, esHost: true, rol: 'HOST', estado: 'VIVO', voto: null }];
 
     } else { 
@@ -286,7 +285,7 @@ async function volverAConfiguracionHost() {
         // Volver al panel de creación
         if (supabaseSubscription) supabaseClient.removeChannel(supabaseSubscription);
         salaActual = null;
-        esHost = true; // El host sigue siendo host, pero sin sala activa
+        esHost = true; 
         mostrarPanelCrear();
     }
 }
@@ -595,7 +594,7 @@ async function iniciarJuegoHost() {
     }
 }
 
-// --- 2. MOSTRAR PANTALLA JUEGO ONLINE ---
+// --- 2. MOSTRAR PANTALLA ROL ONLINE ---
 function asignarRolLocal(temaGlobal, jugadores, yo) {
     if (!pantallas.juego.classList.contains('hidden') && !pantallas.rol.classList.contains('hidden')) return;
 
@@ -652,6 +651,8 @@ function asignarRolLocal(temaGlobal, jugadores, yo) {
             actualizarListaOrdenJuego(jugadores);
             iniciarTimerVisual();
             document.getElementById('btn-activar-voto').style.display = esHost ? 'block' : 'none';
+            // Añadir botón de Nueva Ronda
+            setupBotonNuevaRonda();
         }
     }, 1000);
 }
@@ -678,6 +679,9 @@ function mostrarPantallaJuegoEnPersona(sala) {
     document.getElementById('btn-desbloquear-rol').disabled = false;
     document.getElementById('btn-desbloquear-rol').textContent = "👁️ Desbloquear Mi Rol";
     document.getElementById('timer-display').textContent = "2:30"; 
+
+    // Ocultar botón de nueva ronda mientras se muestran los roles
+    removeBotonNuevaRonda();
 
     const vivos = jugadoresEnPersona.filter(j => j.estado === 'VIVO');
     if (vivos.length > 0) {
@@ -790,13 +794,14 @@ function mostrarPantallaDebateEnPersona() {
     
     // OCULTAR PALABRA CLAVE durante el debate
     document.getElementById('palabra-clave-visible').textContent = "DEBATE EN CURSO";
-    document.getElementById('palabra-clave-visible').style.color = "#e74c3c"; // Color de alerta/atención
+    document.getElementById('palabra-clave-visible').style.color = "#e74c3c"; 
     document.getElementById('img-pista-juego').classList.add('hidden');
     
     // OCULTAR botón de votación (MANUAL en este modo)
     document.getElementById('btn-activar-voto').style.display = 'none';
     
     iniciarTimerVisual(true); // Iniciar el timer de debate (150s)
+    setupBotonNuevaRonda(); // Añadir el botón de nueva ronda
 }
 
 // =========================================================
@@ -1079,6 +1084,29 @@ async function reiniciarRondaHost() {
         .from('salas')
         .update({ estado: 'ESPERA', tema: '', tema_imagen: null, jugadores: jugadoresReset })
         .eq('id', salaActual.id);
+}
+
+// --- BOTÓN NUEVA RONDA EN DEBATE (HOST) ---
+function setupBotonNuevaRonda() {
+    if (!esHost) return;
+    
+    let btnNuevaRonda = document.getElementById('btn-nueva-ronda-debate');
+    if (!btnNuevaRonda) {
+        btnNuevaRonda = document.createElement('button');
+        btnNuevaRonda.id = 'btn-nueva-ronda-debate';
+        btnNuevaRonda.textContent = '🔄 Reiniciar/Nueva Ronda';
+        btnNuevaRonda.className = 'secondary';
+        btnNuevaRonda.onclick = reiniciarRondaHost;
+        // Insertar después del botón de Iniciar Votación (online) o donde está el timer
+        document.getElementById('online-game-controls').appendChild(btnNuevaRonda);
+    } else {
+        btnNuevaRonda.style.display = 'block';
+    }
+}
+
+function removeBotonNuevaRonda() {
+     const btnNuevaRonda = document.getElementById('btn-nueva-ronda-debate');
+     if (btnNuevaRonda) btnNuevaRonda.style.display = 'none';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
