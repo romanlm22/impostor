@@ -3,139 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🕵️‍♂️ Impostor Con Amigos</title>
+    <title>Impostor Game</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
     <div class="main-container">
 
-        <div class="panel" id="inicio-pantalla">
-            <h1>🕵️‍♂️ Impostor Online</h1>
-            <p>Introduce tu nombre para jugar.</p>
+        <div id="inicio-pantalla" class="panel">
+            <h1>Bienvenido al Impostor</h1>
             <div class="input-group">
-                <i class="fas fa-user icon"></i>
-                <input type="text" id="nombre-jugador" placeholder="Tu Nombre">
+                <i class="icon fas fa-user"></i>
+                <input type="text" id="nombre-jugador" placeholder="Tu nombre">
             </div>
-            <button class="toggle-btn" onclick="mostrarPanelCrear()">Crear Sala</button>
-            <button class="toggle-btn secondary" onclick="mostrarPanelUnirse()">Unirse a Sala</button>
+            <button onclick="mostrarPanelCrear()">Crea una Sala</button>
+            <button class="secondary" onclick="mostrarPanelUnirse()">Unirse a Sala</button>
         </div>
-        
-        <div class="panel hidden" id="panel-crear">
+
+        <div id="panel-crear" class="panel hidden">
             <h2>Crear Sala</h2>
-            <p>Configurarás la partida en la siguiente pantalla.</p>
-            <button onclick="crearSala()">🚀 Crear Sala</button>
+            <div class="input-group">
+                <i class="icon fas fa-user-circle"></i>
+                <input type="text" id="nombre-host-crear" readonly>
+            </div>
+
+            <div class="input-group">
+                <label for="modo-juego-selector" style="text-align: left; display: block; margin-bottom: 5px; color: var(--text-dim);">Modo de Juego:</label>
+                <select id="modo-juego-selector" class="input-custom">
+                    <option value="ONLINE">🎮 Online (Jugadores remotos)</option>
+                    <option value="EN_PERSONA">🧍‍♂️ Jugar en Persona (Misma PC/celular)</option>
+                </select>
+            </div>
+
+            <div class="tabs-creacion">
+                <button id="btn-tab-aleatorio" class="tab-btn active" onclick="cambiarTabLobby('aleatorio')">🎲 Aleatorio</button>
+                <button id="btn-tab-manual" class="tab-btn" onclick="cambiarTabLobby('manual')">📚 Manual</button>
+                <button id="btn-tab-custom" class="tab-btn" onclick="cambiarTabLobby('custom')">✏️ Crear</button>
+            </div>
+
+            <div id="lobby-tab-aleatorio">
+                <p style="color: var(--text-dim);">Se elegirá una categoría y palabra al azar.</p>
+            </div>
+
+            <div id="lobby-tab-manual" class="hidden">
+                <p style="color: var(--text-dim);">Elige una categoría de la lista:</p>
+                <div class="categorias" id="lista-cats-manual">
+                    </div>
+            </div>
+
+            <div id="lobby-tab-custom" class="hidden">
+                <div class="input-group">
+                    <i class="icon fas fa-tag"></i>
+                    <input type="text" id="input-custom-titulo" placeholder="Nombre de la categoría (Ej: Héroes de Cómics)">
+                </div>
+                <div class="input-group">
+                    <i class="icon fas fa-list"></i>
+                    <textarea id="input-custom-palabras" placeholder="Palabras separadas por comas (Ej: Superman, Batman, Spiderman)"></textarea>
+                </div>
+                <p style="color: var(--text-dim); font-size: 0.8em;">(No pongas imágenes en este modo)</p>
+            </div>
+
+            <div id="player-names-input" class="hidden">
+                <div class="input-group">
+                    <i class="icon fas fa-users"></i>
+                    <textarea id="input-nombres-jugadores" placeholder="Nombres de jugadores, uno por línea"></textarea>
+                </div>
+                <p style="color: var(--text-dim); font-size: 0.8em;">(Cada nombre en una línea nueva)</p>
+            </div>
+
+            <button onclick="crearSala()">Crea tu Sala</button>
             <button class="secondary" onclick="mostrarPanelInicio()">Volver</button>
         </div>
 
-        <div class="panel hidden" id="panel-unirse">
+        <div id="panel-unirse" class="panel hidden">
             <h2>Unirse a Sala</h2>
             <div class="input-group">
-                <i class="fas fa-door-open icon"></i>
-                <input type="text" id="codigo-sala-input" placeholder="Código (6 letras)" maxlength="6">
+                <i class="icon fas fa-hashtag"></i>
+                <input type="text" id="codigo-sala-input" placeholder="Código de la sala" maxlength="6">
             </div>
-            <button onclick="unirseSala()">Confirmar y Unirse</button>
+            <button onclick="unirseSala()">Unirse</button>
             <button class="secondary" onclick="mostrarPanelInicio()">Volver</button>
         </div>
 
-        <div class="panel hidden" id="sala-pantalla">
-            <h2>Sala: <span id="codigo-sala-display" class="highlight">...</span></h2>
-            
-            <div id="host-controls-area" style="display: none; background: #f8f9fa; padding: 10px; border-radius: 8px; margin-bottom: 15px;">
-                <p style="margin:0 0 10px 0; font-weight:bold; color:#555;">Configuración de Ronda:</p>
-                
-                <div class="tabs-creacion">
-                    <button class="tab-btn active" id="btn-tab-aleatorio" onclick="cambiarTabLobby('aleatorio')">🎲 Aleatorio</button>
-                    <button class="tab-btn" id="btn-tab-manual" onclick="cambiarTabLobby('manual')">👆 Elegir</button>
-                    <button class="tab-btn" id="btn-tab-custom" onclick="cambiarTabLobby('custom')">✏️ Crear</button>
-                </div>
+        <div id="sala-pantalla" class="panel hidden">
+            <h2 id="codigo-sala-display">CÓDIGO: XXXX</h2>
+            <p id="categoria-sala-display">Categoría: ALEATORIO</p>
+            <p id="modo-juego-display" style="font-style: italic; opacity: 0.7;"></p>
 
-                <div id="lobby-tab-aleatorio" class="tab-content">
-                    <p style="font-size:0.9em; color:#777;">Categoría al azar en cada ronda.</p>
-                </div>
-
-                <div id="lobby-tab-manual" class="tab-content hidden">
-                    <div class="categorias" id="lista-cats-manual"></div>
-                </div>
-
-                <div id="lobby-tab-custom" class="tab-content hidden">
-                    <input type="text" id="input-custom-titulo" placeholder="Nombre Categoría" class="input-custom">
-                    <textarea id="input-custom-palabras" rows="3" placeholder="Palabras separadas por coma..." class="input-custom"></textarea>
-                </div>
+            <div id="host-controls-area">
+                <p style="font-weight: bold;">Jugadores conectados: <span id="count-jugadores">0</span></p>
+                <ul id="lista-jugadores" style="text-align: left; padding-left: 20px;">
+                    </ul>
+                <button id="iniciar-juego-btn" onclick="iniciarJuegoHost()">Iniciar Juego</button>
+                <button class="btn-salir" onclick="salirDeSala()">Salir de Sala</button>
             </div>
 
             <div id="player-view-area">
-                <p id="categoria-sala-display" style="font-size: 1.2em; font-weight: bold; color: #3498db;"></p>
+                <p style="font-weight: bold;">Esperando al Host para iniciar...</p>
+                <ul id="lista-jugadores-player" style="text-align: left; padding-left: 20px;">
+                    </ul>
+                <button class="btn-salir" onclick="salirDeSala()">Salir de Sala</button>
             </div>
-            
-            <div class="jugadores-list">
-                <h3>Jugadores (<span id="count-jugadores">0</span>/12):</h3>
-                <ul id="lista-jugadores"></ul>
-            </div>
-            
-            <button id="iniciar-juego-btn" onclick="iniciarJuegoHost()" style="display: none;">
-                <i class="fas fa-play"></i> Iniciar Partida
-            </button>
-            <button onclick="salirDeSala()" class="btn-salir">
-                <i class="fas fa-sign-out-alt"></i> Salir de la Sala
-            </button>
         </div>
 
-        <div class="panel hidden" id="rol-pantalla">
-            <p style="margin: 0; color: #888; font-size: 0.9em;">Categoría:</p>
-            <h3 id="display-categoria-rol" style="margin-top: 0; color: #3498db; text-transform: uppercase;">...</h3>
-            <h2 id="rol-titulo">¡Mira tu Rol!</h2>
-            <div class="card" id="rol-asignado">
-                <h3 id="rol-nombre"></h3>
-                <p id="rol-instruccion"></p>
+        <div id="rol-pantalla" class="panel hidden">
+            <p style="font-size: 0.9em; color: var(--text-dim);">Categoría: <span id="display-categoria-rol"></span></p>
+            <div id="rol-asignado" class="card">
+                <h3><span id="rol-nombre"></span></h3>
+                <p><span id="rol-instruccion"></span></p>
             </div>
-            <p class="instruccion-rol" id="cuenta-regresiva-rol">Memoriza tu rol...</p>
+            <p id="cuenta-regresiva-rol" style="font-size: 1.2em; font-weight: bold;"></p>
         </div>
-        
-        <div class="panel hidden" id="juego-pantalla">
-            <div style="background-color: #f0f3f4; padding: 5px; border-radius: 8px; margin-bottom: 15px;">
-                Categoría: <strong id="display-categoria-juego" style="color: #3498db;">...</strong>
-            </div>
-            <p style="margin-bottom: 5px; color: #888;">Tu palabra es:</p>
-            <h1 id="palabra-clave-visible" style="margin-top: 0; font-size: 2.5em; text-transform: uppercase;">...</h1>
-            
-            <img id="img-pista-juego" src="" class="imagen-pista hidden">
 
-            <hr>
-            <h3>🗣️ Orden de Habla (Vivos):</h3>
+        <div id="juego-pantalla" class="panel hidden">
+            <p style="font-size: 0.9em; color: var(--text-dim);">Categoría: <span id="display-categoria-juego"></span></p>
+            <div style="background-color: #f0f3f4; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 id="palabra-clave-visible" style="margin: 0; color: #34495e;"></h3>
+                <img id="img-pista-juego" class="imagen-pista hidden" src="" alt="Pista de la palabra">
+            </div>
+
+            <p style="font-weight: bold;">Orden de Habla:</p>
             <ul id="lista-orden-habla" style="text-align: left; padding-left: 20px; margin-bottom: 20px;"></ul>
 
-            <div class="timer">Tiempo restante: <span id="timer-display">2:30</span></div>
+            <div id="online-game-controls">
+                <div class="timer">Tiempo restante: <span id="timer-display">2:30</span></div>
+                <button class="secondary" onclick="activarFaseVotacionHost()" id="btn-activar-voto" style="display: none;">
+                    🗳️ Iniciar Votación
+                </button>
+            </div>
+
+            <div id="en-persona-game-controls" class="hidden">
+                <div id="jugador-en-turno-display" style="font-size: 1.3em; font-weight: bold; margin-bottom: 15px;"></div>
+                <button id="btn-desbloquear-rol" class="secondary" onclick="desbloquearRolEnPersona()" style="background-color: #3498db; color: white;">
+                    👁️ Desbloquear Mi Rol
+                </button>
+                <div id="display-rol-en-persona" class="card hidden">
+                    <h3><span id="rol-nombre-en-persona"></span></h3>
+                    <p><span id="rol-instruccion-en-persona"></span></p>
+                    <img id="img-pista-en-persona" class="imagen-pista hidden" src="" alt="Pista de la palabra">
+                </div>
+                <button id="btn-siguiente-jugador" onclick="siguienteJugadorEnPersona()" class="hidden">
+                    ➡️ Siguiente Jugador
+                </button>
+            </div>
+
+        </div>
+
+        <div id="votacion-pantalla" class="panel hidden">
+            <h2>Tiempo de Votación</h2>
+            <div class="timer">
+                <span id="voting-timer-display" style="font-size: 2em; color: #e74c3c;">150</span>
+            </div>
             
-            <button class="secondary" onclick="activarFaseVotacionHost()" id="btn-activar-voto" style="display: none; background-color: #9b59b6; color: white;">
-                🗳️ Iniciar Votación
+            <p id="estado-votacion" style="margin-top: 15px; font-weight: bold;"></p>
+            <div id="lista-votar-jugadores" class="grid-votos">
+                </div>
+            <button id="btn-cerrar-votacion" onclick="procesarVotacionHost()" style="display: none; background-color: #e74c3c;">
+                🛑 Cerrar Votación
             </button>
-            <button onclick="salirDeSala()" class="btn-salir" style="margin-top: 20px;"><i class="fas fa-sign-out-alt"></i> Abandonar Partida</button>
         </div>
 
-        <div class="panel hidden" id="votacion-pantalla">
-            <h2>🗳️ ¡Hora de Votar!</h2>
-            <div style="font-size: 1.5em; font-weight: bold; color: #e74c3c; margin: 10px 0;">
-                Tiempo: <span id="voting-timer-display">150</span>s
+        <div id="victoria-pantalla" class="panel hidden">
+            <h1 id="titulo-victoria" style="font-size: 2.5em; margin-bottom: 10px;"></h1>
+            <p id="subtitulo-victoria" style="font-size: 1.2em;"></p>
+            <div id="revelacion-final" class="card" style="margin-top: 30px;">
+                <p style="font-size: 1.5em; font-weight: bold; margin-bottom: 10px;">La palabra secreta era:</p>
+                <h2 id="palabra-final" style="font-size: 3em; color: var(--primary-color);"></h2>
+                <img id="imagen-palabra-final" class="imagen-revelada hidden" src="" alt="Palabra revelada">
             </div>
-            <p>Selecciona al sospechoso.</p>
-            <div id="estado-votacion" style="margin-bottom: 10px; font-weight: bold; color: #e67e22;"></div>
-            <div id="lista-votar-jugadores" class="grid-votos"></div>
-            <button onclick="procesarVotacionHost()" id="btn-cerrar-votacion" style="display: none; margin-top: 20px; background-color: #c0392b; color: white;">🛑 Forzar Cierre</button>
-        </div>
-
-        <div class="panel hidden" id="victoria-pantalla">
-            <h1 id="titulo-victoria"></h1>
-            <p id="subtitulo-victoria"></p>
-            <div class="card" id="revelacion-final">
-                <h3>La palabra era:</h3>
-                <h2 id="palabra-final" style="margin: 10px 0; color: #2c3e50; font-size: 2em;"></h2>
-                <img id="imagen-palabra-final" src="" alt="Imagen de la palabra" class="imagen-revelada hidden">
-                <div id="lista-impostores-revelados" style="margin-top: 20px;"></div>
-            </div>
-            <button onclick="reiniciarRondaHost()" id="btn-volver-sala" style="display: none;">🔄 Volver a Sala de Espera</button>
+            <p id="lista-impostores-revelados" style="margin-top: 20px; font-size: 1.1em; color: var(--danger-color); font-weight: bold;"></p>
+            <button id="btn-volver-sala" onclick="reiniciarRondaHost()">Volver al Lobby</button>
+            <button class="btn-salir" onclick="salirDeSala()">Salir del Juego</button>
         </div>
 
     </div>
