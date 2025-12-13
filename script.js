@@ -7,7 +7,6 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // --- DATOS (PALABRAS CON IMÁGENES) ---
-// Las categorías ya NO tienen imágenes asociadas, solo las palabras individuales.
 const data = {
     futbol: [
         { word: "Maradona", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Diego_Maradona_in_1986.jpg/245px-Diego_Maradona_in_1986.jpg" },
@@ -92,6 +91,8 @@ let esHost = false;
 let supabaseSubscription = null;
 let timerInterval = null;    
 let votingInterval = null;
+// Variable para trackear qué pestaña está activa en el lobby
+let activeLobbyTab = 'aleatorio'; 
 
 // --- DOM ---
 const pantallas = {
@@ -106,7 +107,7 @@ const pantallas = {
 };
 
 // =========================================================
-// I. GESTIÓN DE PANTALLAS Y TABS
+// I. GESTIÓN DE PANTALLAS
 // =========================================================
 
 function mostrarPanel(nombrePanel) {
@@ -124,7 +125,6 @@ function mostrarPanelCrear() {
     nombreJugador = document.getElementById('nombre-jugador').value.trim();
     if (!nombreJugador) return alert('Por favor, ingresa tu nombre primero.');
     mostrarPanel('crear');
-    cargarCategoriasManuales(); 
 }
 
 function mostrarPanelUnirse() {
@@ -133,27 +133,31 @@ function mostrarPanelUnirse() {
     mostrarPanel('unirse');
 }
 
-function cambiarTab(modo) {
-    document.getElementById('tab-aleatorio').classList.add('hidden');
-    document.getElementById('tab-manual').classList.add('hidden');
-    document.getElementById('tab-custom').classList.add('hidden');
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+// --- TABS DEL LOBBY ---
+function cambiarTabLobby(modo) {
+    activeLobbyTab = modo; // Guardamos estado para cuando se inicie el juego
 
-    document.getElementById(`tab-${modo}`).classList.remove('hidden');
-    const btns = document.querySelectorAll('.tab-btn');
-    if (modo === 'aleatorio') btns[0].classList.add('active');
-    if (modo === 'manual') btns[1].classList.add('active');
-    if (modo === 'custom') btns[2].classList.add('active');
+    document.getElementById('lobby-tab-aleatorio').classList.add('hidden');
+    document.getElementById('lobby-tab-manual').classList.add('hidden');
+    document.getElementById('lobby-tab-custom').classList.add('hidden');
+    
+    // Quitar active class de todos los botones
+    document.getElementById('btn-tab-aleatorio').classList.remove('active');
+    document.getElementById('btn-tab-manual').classList.remove('active');
+    document.getElementById('btn-tab-custom').classList.remove('active');
+
+    // Activar el seleccionado
+    document.getElementById(`lobby-tab-${modo}`).classList.remove('hidden');
+    document.getElementById(`btn-tab-${modo}`).classList.add('active');
 }
 
-// --- CARGAR CATEGORÍAS MANUALES (SOLO TEXTO, SIN IMÁGENES) ---
 function cargarCategoriasManuales() {
     const contenedor = document.getElementById('lista-cats-manual');
     contenedor.innerHTML = '';
     
     Object.keys(data).forEach(key => {
         const btn = document.createElement('button');
-        btn.classList.add('categoria-btn'); // Estilo simple
+        btn.classList.add('categoria-btn'); // Estilo simple texto
 
         const span = document.createElement('span');
         span.textContent = key.toUpperCase().replace(/_/g, ' '); 
@@ -181,37 +185,8 @@ function generarCodigo() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-async function crearSala(modo) {
-    let catFinal = '';
-    let listaPalabrasFinal = [];
-    let modoJuego = 'ALEATORIO';
-
-    if (modo === 'aleatorio') {
-        catFinal = obtenerCategoriaAleatoria();
-        listaPalabrasFinal = data[catFinal];
-        modoJuego = 'ALEATORIO';
-    } 
-    else if (modo === 'manual') {
-        if (!categoriaSeleccionada) return alert("Selecciona una categoría de la lista.");
-        catFinal = categoriaSeleccionada;
-        listaPalabrasFinal = data[catFinal];
-        modoJuego = 'FIJO';
-    } 
-    else if (modo === 'custom') {
-        const nombre = document.getElementById('input-custom-titulo').value.trim();
-        const palabrasRaw = document.getElementById('input-custom-palabras').value.trim();
-        
-        if (!nombre) return alert("Ponle nombre a tu categoría.");
-        if (!palabrasRaw) return alert("Escribe algunas palabras.");
-        
-        const palabrasArray = palabrasRaw.split(',').map(p => p.trim()).filter(p => p.length > 0);
-        if (palabrasArray.length < 2) return alert("Necesitas al menos 2 palabras.");
-        
-        catFinal = nombre;
-        listaPalabrasFinal = palabrasArray;
-        modoJuego = 'FIJO';
-    }
-
+// Crear sala solo inicializa. La config real se hace en el lobby.
+async function crearSala() {
     const codigo = generarCodigo();
     const jugadorId = Date.now().toString(36);
 
@@ -220,9 +195,9 @@ async function crearSala(modo) {
         .insert({
             codigo: codigo,
             estado: 'ESPERA',
-            categoria: catFinal,
-            modo_juego: modoJuego,
-            lista_palabras: listaPalabrasFinal, 
+            categoria: 'ALEATORIO', 
+            modo_juego: 'ALEATORIO',
+            lista_palabras: [], 
             tema: '', 
             tema_imagen: null, 
             jugadores: [{ id: jugadorId, nombre: nombreJugador, esHost: true, rol: 'PENDIENTE', estado: 'VIVO', voto: null }]
@@ -238,7 +213,9 @@ async function crearSala(modo) {
     salaActual = nuevaSala;
     esHost = true;
     
-    mostrarSalaEspera(codigo, catFinal);
+    // Al crear, cargamos las categorías en el DOM por si quiere cambiar a manual
+    cargarCategoriasManuales();
+    mostrarSalaEspera(codigo, "ALEATORIO");
     iniciarSuscripcionSala(codigo);
 }
 
@@ -277,24 +254,23 @@ async function unirseSala() {
     iniciarSuscripcionSala(codigo);
 }
 
-// --- LÓGICA DE MIGRACIÓN DE HOST ---
-// Si el Host sale, el siguiente en la lista se convierte en Host.
+// --- SALIR DE SALA (Con migración de Host) ---
 async function salirDeSala() {
     if (!salaActual) return;
     if (confirm("¿Seguro que quieres salir?")) {
         
         let nuevosJugadores = salaActual.jugadores.filter(j => j.nombre !== nombreJugador);
         
-        // Si yo era el Host, necesitamos asignar uno nuevo
+        // Si yo era Host, pasamos el liderazgo al siguiente
         if (esHost && nuevosJugadores.length > 0) {
-            nuevosJugadores[0].esHost = true; // El primero de la lista hereda el trono
+            nuevosJugadores[0].esHost = true; 
         }
 
         if (nuevosJugadores.length === 0) {
-            // Si era el último, borramos la sala
+            // Si no queda nadie, borrar sala
             await supabaseClient.from('salas').delete().eq('id', salaActual.id);
         } else {
-            // Si quedan jugadores, actualizamos la lista
+            // Actualizar lista
             await supabaseClient.from('salas').update({ jugadores: nuevosJugadores }).eq('id', salaActual.id);
         }
         
@@ -324,6 +300,22 @@ function mostrarSalaEspera(codigo, categoria) {
     mostrarPanel('sala');
     document.getElementById('codigo-sala-display').textContent = codigo;
     document.getElementById('categoria-sala-display').textContent = `Categoría: ${categoria.toUpperCase()}`;
+    
+    // Controles de Host
+    const controls = document.getElementById('host-controls-area');
+    const playerView = document.getElementById('player-view-area');
+    
+    if (esHost) {
+        controls.style.display = 'block';
+        playerView.style.display = 'none';
+        // Asegurarnos que las categorías estén cargadas
+        if (document.getElementById('lista-cats-manual').children.length === 0) {
+            cargarCategoriasManuales();
+        }
+    } else {
+        controls.style.display = 'none';
+        playerView.style.display = 'block';
+    }
 }
 
 // =========================================================
@@ -351,16 +343,13 @@ function manejarCambioSala(nuevaSala) {
     const yo = nuevaSala.jugadores.find(j => j.nombre === nombreJugador);
     if (!yo) { alert("Has sido expulsado."); volverAlInicio(); return; }
 
-    // Actualizar si soy Host (por si hubo migración)
+    // Actualizar si soy Host
     esHost = yo.esHost;
 
     actualizarListaJugadores(nuevaSala.jugadores);
     
     if (nuevaSala.estado === 'ESPERA') {
-        document.getElementById('categoria-sala-display').textContent = `Categoría: ${nuevaSala.categoria.toUpperCase()}`;
-        // Asegurar visibilidad de controles si acabo de convertirme en Host
-        document.getElementById('host-controls-categoria').style.display = esHost ? 'block' : 'none';
-        document.getElementById('iniciar-juego-btn').style.display = (esHost && nuevaSala.jugadores.length >= 3) ? 'block' : 'none';
+        mostrarSalaEspera(nuevaSala.codigo, nuevaSala.categoria);
     }
 
     switch (nuevaSala.estado) {
@@ -438,20 +427,40 @@ function mezclarArray(array) {
     return array;
 }
 
-// --- 1. INICIAR EL JUEGO ---
+// --- 1. INICIAR EL JUEGO (LEE LOS CONTROLES DEL LOBBY) ---
 async function iniciarJuegoHost() {
     if (salaActual.jugadores.length < 3) return alert("Mínimo 3 jugadores.");
     
-    let categoriaFinal = salaActual.categoria;
-    let palabrasFinales = salaActual.lista_palabras; 
+    let catFinal = '';
+    let listaPalabrasFinal = [];
 
-    if (salaActual.modo_juego === 'ALEATORIO') {
+    // Leemos qué pestaña está activa en el DOM
+    if (activeLobbyTab === 'aleatorio') {
         const nuevaCat = obtenerCategoriaAleatoria();
-        categoriaFinal = nuevaCat;
-        palabrasFinales = data[nuevaCat];
+        catFinal = nuevaCat;
+        listaPalabrasFinal = data[nuevaCat];
+    } 
+    else if (activeLobbyTab === 'manual') {
+        if (!categoriaSeleccionada) return alert("Selecciona una categoría de la lista.");
+        catFinal = categoriaSeleccionada;
+        listaPalabrasFinal = data[catFinal];
+    }
+    else if (activeLobbyTab === 'custom') {
+        const nombre = document.getElementById('input-custom-titulo').value.trim();
+        const palabrasRaw = document.getElementById('input-custom-palabras').value.trim();
+        
+        if (!nombre) return alert("Ponle nombre a tu categoría.");
+        if (!palabrasRaw) return alert("Escribe algunas palabras.");
+        
+        const palabrasArray = palabrasRaw.split(',').map(p => p.trim()).filter(p => p.length > 0);
+        if (palabrasArray.length < 2) return alert("Necesitas al menos 2 palabras.");
+        
+        catFinal = nombre;
+        listaPalabrasFinal = palabrasArray;
     }
     
-    const itemElegido = palabrasFinales[Math.floor(Math.random() * palabrasFinales.length)];
+    // Elegir tema
+    const itemElegido = listaPalabrasFinal[Math.floor(Math.random() * listaPalabrasFinal.length)];
     let temaTexto = '';
     let temaImagen = null;
 
@@ -463,6 +472,7 @@ async function iniciarJuegoHost() {
         temaImagen = null;
     }
     
+    // Configurar Impostores
     const numJugadores = salaActual.jugadores.length;
     let numImpostores = 1;
     if (numJugadores > 5 && numJugadores <= 10) numImpostores = 2;
@@ -480,12 +490,13 @@ async function iniciarJuegoHost() {
         }
     }
     
+    // Guardar
     await supabaseClient
         .from('salas')
         .update({
             estado: 'EN_JUEGO',
-            categoria: categoriaFinal,
-            lista_palabras: palabrasFinales,
+            categoria: catFinal,
+            lista_palabras: listaPalabrasFinal,
             tema: temaTexto,
             tema_imagen: temaImagen, 
             jugadores: jugadoresAsignados 
@@ -500,6 +511,7 @@ function asignarRolLocal(temaGlobal, jugadores, yo) {
     if (yo.estado === 'ELIMINADO') {
         mostrarPanel('juego');
         document.getElementById('palabra-clave-visible').textContent = "HAS SIDO ELIMINADO 👻";
+        document.getElementById('img-pista-juego').classList.add('hidden');
         document.getElementById('timer-display').textContent = "--:--";
         return;
     }
@@ -533,12 +545,22 @@ function asignarRolLocal(temaGlobal, jugadores, yo) {
             document.getElementById('display-categoria-juego').textContent = salaActual.categoria.toUpperCase();
 
             const palabraDisplay = document.getElementById('palabra-clave-visible');
+            const imgPista = document.getElementById('img-pista-juego');
+
             if (yo.rol === 'IMPOSTOR') {
                 palabraDisplay.textContent = "ERES EL IMPOSTOR";
                 palabraDisplay.style.color = "#e74c3c"; 
+                imgPista.classList.add('hidden');
+                imgPista.src = "";
             } else {
                 palabraDisplay.textContent = temaGlobal.toUpperCase();
                 palabraDisplay.style.color = "#2ecc71"; 
+                if (salaActual.tema_imagen) {
+                    imgPista.src = salaActual.tema_imagen;
+                    imgPista.classList.remove('hidden');
+                } else {
+                    imgPista.classList.add('hidden');
+                }
             }
 
             actualizarListaOrdenJuego(jugadores);
@@ -580,9 +602,8 @@ function mostrarPantallaVotacion(jugadores, yo) {
     mostrarPanel('votacion');
     if (timerInterval) clearInterval(timerInterval);
     
-    // --- TIMER AUMENTADO A 150 SEGUNDOS ---
     if (votingInterval) clearInterval(votingInterval);
-    let timeLeft = 150; 
+    let timeLeft = 150; // TIEMPO ACTUALIZADO
     const timerDisplay = document.getElementById('voting-timer-display');
     timerDisplay.textContent = timeLeft;
 

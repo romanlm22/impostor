@@ -1,379 +1,423 @@
+/* =========================================
+   1. BASE & TIPOGRAFÍA (MODO OSCURO)
+   ========================================= */
 :root {
-    --color-principal: #3498db; /* Azul */
-    --color-fondo: #2c3e50; /* Azul oscuro */
-    --color-panel: #ffffff;
-    --color-texto: #333;
-    --color-impostor: #e74c3c; /* Rojo */
-    --color-normal: #2ecc71; /* Verde */
+    --primary-color: #3498db;  /* Azul brillante */
+    --secondary-color: #7f8c8d; /* Gris medio */
+    --accent-color: #9b59b6;    /* Morado (Votar) */
+    --danger-color: #e74c3c;    /* Rojo (Impostor/Salir) */
+    --success-color: #2ecc71;   /* Verde (Ciudadano) */
+    --host-color: #f1c40f;      /* Amarillo (Host) */
+    
+    --bg-main: #1a1a2e;         /* Fondo principal muy oscuro */
+    --bg-panel: #16213e;        /* Fondo del panel central */
+    --bg-element: #0f3460;      /* Fondo de elementos internos (inputs, items) */
+    
+    --text-light: #ecf0f1;      /* Texto casi blanco */
+    --text-dim: #bdc3c7;        /* Texto gris claro */
 }
 
 body {
-    font-family: 'Arial', sans-serif;
-    background-color: var(--color-fondo);
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-light);
+    margin: 0;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    margin: 0;
+    /* Añadir una textura sutil o degradado al fondo */
+    background-image: radial-gradient(circle at center, #1a1a2e 0%, #11111f 100%);
 }
 
+h1, h2, h3 {
+    margin-top: 0;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+h1 { color: var(--primary-color); font-size: 2.2em; }
+h2 { color: var(--text-light); }
+p { color: var(--text-dim); line-height: 1.5; }
+
+.highlight { color: var(--primary-color); font-weight: bold; }
+.hidden { display: none !important; }
+
+/* =========================================
+   2. CONTENEDOR PRINCIPAL
+   ========================================= */
 .main-container {
-    padding: 20px;
+    background-color: var(--bg-panel);
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
     width: 90%;
-    max-width: 450px;
-}
-
-/* Panel Central */
-.panel {
-    background-color: var(--color-panel);
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    max-width: 480px; /* Un poco más ancho */
     text-align: center;
-    transition: all 0.5s ease-in-out;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.hidden {
-    display: none !important;
+/* Transiciones suaves al cambiar de panel */
+.panel {
+    animation: fadeIn 0.3s ease-in-out;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-h1 {
-    color: var(--color-principal);
-    margin-bottom: 5px;
-}
-
-h2 {
-    color: var(--color-texto);
-    margin-top: 5px;
-    border-bottom: 2px solid #ecf0f1;
-    padding-bottom: 10px;
-}
-
-/* Inputs y Botones */
+/* =========================================
+   3. FORMULARIOS E INPUTS
+   ========================================= */
 .input-group {
-    display: flex;
-    align-items: center;
-    margin-bottom: 15px;
-    border: 1px solid #bdc3c7;
-    border-radius: 8px;
-    padding: 8px;
+    margin: 20px 0;
+    position: relative;
 }
 
-.input-group input {
-    flex-grow: 1;
-    border: none;
-    padding: 8px 10px;
-    font-size: 1em;
-    outline: none;
-}
-
-.input-group .icon {
-    color: var(--color-principal);
-    margin-right: 10px;
-    font-size: 1.2em;
-}
-
-button {
+input, textarea {
     width: 100%;
+    padding: 15px 15px 15px 45px; /* Espacio para el icono */
+    background-color: var(--bg-element);
+    border: 2px solid transparent;
+    border-radius: 8px;
+    color: var(--text-light);
+    font-size: 1em;
+    font-family: inherit;
+    box-sizing: border-box;
+    transition: all 0.3s;
+}
+
+input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 8px rgba(52, 152, 219, 0.3);
+}
+
+.icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-dim);
+}
+
+/* Inputs personalizados en el lobby */
+.input-custom {
     padding: 12px;
-    margin-top: 10px;
+    background-color: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    margin-bottom: 10px;
+}
+
+/* =========================================
+   4. BOTONES MODERNOS
+   ========================================= */
+button {
+    background-color: var(--primary-color);
+    color: white;
     border: none;
+    padding: 14px 24px;
+    margin: 10px 0;
     border-radius: 8px;
-    font-size: 1.1em;
     cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.2s;
+    width: 100%;
+    font-size: 1.05em;
+    font-weight: 600;
+    transition: all 0.2s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 }
 
-.toggle-btn {
-    background-color: var(--color-principal);
-    color: white;
-}
-
-.toggle-btn:hover {
+button:hover {
     background-color: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+button:active { transform: translateY(0); }
+
+button.secondary {
+    background-color: transparent;
+    border: 2px solid var(--secondary-color);
+    color: var(--text-dim);
+    box-shadow: none;
+}
+button.secondary:hover {
+    background-color: rgba(255,255,255,0.05);
+    color: var(--text-light);
+    border-color: var(--text-light);
 }
 
-.secondary {
-    background-color: #ecf0f1;
-    color: var(--color-texto);
-}
-
-.secondary:hover {
-    background-color: #bdc3c7;
-}
-
-/* Categorías */
-.opciones-cat {
-    margin-bottom: 20px;
-}
-
-.categorias {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 10px;
-}
-
-.categoria-btn {
-    padding: 8px 12px;
-    border: 2px solid var(--color-principal);
-    background-color: white;
-    color: var(--color-principal);
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.2s, color 0.2s;
-    flex-grow: 1;
-    min-width: 100px;
-}
-
-.categoria-btn.selected {
-    background-color: var(--color-principal);
-    color: white;
-    font-weight: bold;
-}
-
-/* Lista de Jugadores (Sala de Espera) */
-.jugadores-list {
-    text-align: left;
-    margin: 20px 0;
-}
-
-#lista-jugadores {
-    list-style: none;
-    padding: 0;
-}
-
-#lista-jugadores li {
-    padding: 8px;
-    border-bottom: 1px dashed #ecf0f1;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-/* Tarjeta de Rol */
-.card {
-    padding: 30px;
-    border-radius: 10px;
-    margin: 20px 0;
-    min-height: 100px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-}
-
-#rol-nombre {
-    font-size: 2.5em;
-    font-weight: bold;
-    color: white;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-}
-
-.card.normal-rol {
-    background-color: var(--color-normal);
-}
-
-.card.impostor-rol {
-    background-color: var(--color-impostor);
-}
-
-.instruccion-rol {
-    font-style: italic;
-    color: #666;
-    margin-top: 15px;
-}
-
-/* Botón de Salir (Rojo) */
 .btn-salir {
-    background-color: #e74c3c; /* Rojo */
-    color: white;
-    margin-top: 15px;
-    font-size: 0.9em;
-}
-
-.btn-salir:hover {
-    background-color: #c0392b;
-}
-
-/* Estilos de Votación */
-.grid-votos {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    background-color: var(--danger-color);
     margin-top: 20px;
 }
+.btn-salir:hover { background-color: #c0392b; }
 
-.btn-votar-jugador {
-    background-color: #ecf0f1;
-    color: #333;
-    border: 2px solid #bdc3c7;
-    padding: 15px;
-    text-align: left;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.btn-votar-jugador:hover {
-    background-color: #ffeaa7;
-    border-color: #f1c40f;
-}
-
-.btn-eliminar-accion {
-    background-color: #e74c3c;
+/* Botón pequeño de expulsar (Kick) */
+.btn-kick {
+    background: var(--danger-color);
     color: white;
-    padding: 5px 10px;
-    border-radius: 5px;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 6px;
+    margin-left: 8px;
     font-size: 0.8em;
-    cursor: pointer;
+    width: auto; /* Sobreescribe el 100% global */
+    box-shadow: none;
 }
 
-/* Estilos de Victoria */
-.victoria-impostor {
-    background-color: #e74c3c !important; /* Fondo Rojo */
-    color: white;
-}
-.victoria-inocente {
-    background-color: #2ecc71 !important; /* Fondo Verde */
-    color: white;
-}
+/* =========================================
+   5. LISTAS (JUGADORES Y ORDEN)
+   ========================================= */
+ul { list-style: none; padding: 0; }
 
-/* Estilo cuando seleccionas a alguien para votar */
-.btn-votar-jugador.seleccionado {
-    background-color: #3498db;
-    color: white;
-    border-color: #2980b9;
-    font-weight: bold;
-}
-
-/* Indicador de cuántos votos lleva alguien (visible solo al final o para host si quieres) */
-.badge-votos {
-    background-color: #fff;
-    color: #333;
-    border-radius: 50%;
-    width: 25px;
-    height: 25px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 0.8em;
-    font-weight: bold;
-}
-
-/* Estilos de Votación */
-.grid-votos {
-    display: grid;
-    grid-template-columns: 1fr 1fr; /* Dos columnas */
-    gap: 10px;
-    margin-top: 20px;
-}
-
-@media (max-width: 500px) {
-    .grid-votos {
-        grid-template-columns: 1fr; /* Una columna en celular */
-    }
-}
-
-.btn-votar-jugador {
-    background-color: #ecf0f1;
-    color: #333;
-    border: 2px solid #bdc3c7;
-    padding: 15px;
+li {
+    background-color: rgba(255,255,255,0.05);
+    margin: 8px 0;
+    padding: 12px 15px;
     border-radius: 8px;
-    cursor: pointer;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border-left: 4px solid transparent;
     transition: all 0.2s;
 }
 
-.btn-votar-jugador:hover {
-    background-color: #dfe6e9;
-    transform: translateY(-2px);
-}
-
-.btn-votar-jugador.seleccionado {
-    background-color: #3498db;
-    color: white;
-    border-color: #2980b9;
+/* Resaltar al propio jugador en la lista */
+#lista-orden-habla li span[style*="#3498db"] {
+    /* El estilo inline ya lo maneja JS, pero esto refuerza */
     font-weight: bold;
 }
+/* Resaltar al host con un borde dorado sutil */
+li span[style*="IsHost"] { /* No se puede seleccionar por estilo inline fácilmente, pero visualmente el icono ayuda */ }
 
-/* Pestañas de creación */
+/* =========================================
+   6. LOBBY & TABS DE CREACIÓN
+   ========================================= */
+#host-controls-area {
+    background-color: rgba(255,255,255,0.03) !important; /* Sobreescribir estilo inline */
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-light);
+}
+
 .tabs-creacion {
     display: flex;
     justify-content: space-around;
     margin-bottom: 20px;
-    border-bottom: 2px solid #ecf0f1;
+    border-bottom: 2px solid rgba(255,255,255,0.1);
 }
 
 .tab-btn {
     background: none;
     border: none;
-    padding: 10px 20px;
-    cursor: pointer;
-    font-size: 1em;
-    color: #7f8c8d;
+    padding: 10px 15px;
+    color: var(--text-dim);
     border-bottom: 3px solid transparent;
+    font-size: 0.95em;
+    width: auto;
+    box-shadow: none;
+    margin: 0;
+    border-radius: 5px 5px 0 0;
 }
 
 .tab-btn.active {
-    color: #3498db;
-    border-bottom: 3px solid #3498db;
-    font-weight: bold;
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    background-color: rgba(52, 152, 219, 0.05);
 }
 
-.tab-btn:hover {
-    color: #3498db;
+.tab-btn:hover:not(.active) {
+    color: var(--text-light);
+    background-color: rgba(255,255,255,0.05);
 }
 
-.input-custom {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 10px;
-    border: 1px solid #bdc3c7;
-    border-radius: 5px;
-    font-family: inherit;
-    box-sizing: border-box; /* Importante para que no se salga */
+.categorias {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 5px;
 }
 
-/* Imagen de la palabra en la pantalla de victoria */
-.imagen-revelada {
-    max-width: 100%;
-    max-height: 250px; /* Limita la altura */
-    border-radius: 12px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    margin: 15px auto; /* Centrado */
-    display: block;
-}
+/* Scrollbar personalizado para el modo oscuro */
+.categorias::-webkit-scrollbar { width: 6px; }
+.categorias::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
 
-/* Estilos para el nombre de la palabra final */
-#palabra-final {
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-/* Botones de categoría simples (Texto grande) */
 .categoria-btn {
-    padding: 15px 20px;
-    font-size: 1.1em;
-    font-weight: bold;
+    padding: 12px;
+    font-size: 0.9em;
+    font-weight: 600;
     text-transform: uppercase;
-    /* Sin flex ni imagenes */
-    text-align: center;
+    background-color: rgba(255,255,255,0.05);
+    color: var(--text-dim);
+    border: 2px solid transparent;
+    box-shadow: none;
+    margin: 0;
 }
 
-/* Imagen SOLO para la palabra final revelada */
-.imagen-revelada {
-    max-width: 100%;
-    max-height: 300px;
+.categoria-btn:hover {
+    background-color: rgba(255,255,255,0.1);
+    transform: translateY(-1px);
+}
+
+.categoria-btn.selected {
+    background-color: rgba(52, 152, 219, 0.2);
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* =========================================
+   7. PANTALLAS DE JUEGO Y ROL
+   ========================================= */
+/* Header de categoría en el juego */
+#juego-pantalla > div[style*="background-color: #f0f3f4"] {
+    background-color: rgba(52, 152, 219, 0.1) !important;
+    border: 1px solid var(--primary-color);
+    color: var(--text-light);
+}
+
+/* Tarjeta de Rol - ¡Mucho más impactante! */
+.card {
+    padding: 25px;
     border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    margin: 20px auto;
-    display: block;
-    object-fit: contain;
+    margin: 20px 0;
+    color: var(--text-light);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+    position: relative;
+    overflow: hidden;
 }
 
-/* El resto de tus estilos (btn-salir, grid-votos, etc.) se mantienen igual */
+/* Rol Normal (Ciudadano) */
+.normal-rol {
+    background: linear-gradient(135deg, #1e3c29, #2ecc71);
+    border-left: 6px solid #27ae60;
+}
+.normal-rol h3 { color: white; font-size: 1.8em; text-transform: uppercase; }
+.normal-rol p { color: rgba(255,255,255,0.9); font-size: 1.2em; }
+
+/* Rol Impostor */
+.impostor-rol {
+    background: linear-gradient(135deg, #4a2321, #e74c3c);
+    border-left: 6px solid #c0392b;
+}
+.impostor-rol h3 { color: white; font-size: 1.8em; }
+.impostor-rol p { color: rgba(255,255,255,0.9); font-size: 1.2em; font-weight: bold; }
+
+.instruccion-rol {
+    font-style: italic;
+    opacity: 0.8;
+    margin-top: 20px;
+}
+
+/* Imágenes */
+.imagen-pista, .imagen-revelada {
+    max-width: 100%;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+    margin: 15px auto;
+    display: block;
+    object-fit: cover;
+    border: 3px solid rgba(255,255,255,0.1);
+}
+.imagen-pista { max-height: 180px; }
+.imagen-revelada { max-height: 280px; }
+
+/* Timer */
+.timer {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: var(--text-light);
+    background: rgba(255,255,255,0.05);
+    padding: 10px;
+    border-radius: 8px;
+    margin: 15px 0;
+}
+
+/* =========================================
+   8. VOTACIÓN
+   ========================================= */
+#voting-timer-display {
+    font-size: 2em;
+    /* El color se mantiene inline en el HTML (#e74c3c), que se ve bien en oscuro */
+}
+
+.grid-votos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Responsive */
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.btn-votar-jugador {
+    background-color: rgba(255,255,255,0.05);
+    border: 2px solid rgba(255,255,255,0.1);
+    color: var(--text-light);
+    padding: 12px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+    box-shadow: none;
+    margin: 0;
+}
+
+.btn-votar-jugador:hover:not([disabled]) {
+    background-color: rgba(255,255,255,0.1);
+    border-color: var(--text-dim);
+    transform: translateY(-2px);
+}
+
+.btn-votar-jugador.seleccionado {
+    background-color: rgba(155, 89, 182, 0.2); /* Tono morado */
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 10px rgba(155, 89, 182, 0.3);
+}
+
+/* =========================================
+   9. PANTALLA DE VICTORIA
+   ========================================= */
+/* Fondos específicos para la victoria */
+body.victoria-inocente {
+    background-image: radial-gradient(circle at center, #1e3c29 0%, #111f1a 100%);
+}
+body.victoria-impostor {
+    background-image: radial-gradient(circle at center, #4a2321 0%, #2c1414 100%);
+}
+
+.victoria-inocente #titulo-victoria { color: var(--success-color); }
+.victoria-impostor #titulo-victoria { color: var(--danger-color); }
+
+#revelacion-final {
+    background-color: rgba(255,255,255,0.05);
+    border: none;
+    padding: 20px;
+}
+
+#palabra-final {
+    color: var(--primary-color) !important; /* Sobreescribir inline */
+    font-size: 2.5em !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+#lista-impostores-revelados {
+    margin-top: 20px;
+    font-size: 1.1em;
+    color: var(--danger-color);
+    font-weight: bold;
+}
+
+/* =========================================
+   10. RESPONSIVE (CELULARES)
+   ========================================= */
+@media (max-width: 480px) {
+    .main-container {
+        width: 95%;
+        padding: 20px 15px;
+    }
+    h1 { font-size: 1.8em; }
+    #palabra-clave-visible, #palabra-final { font-size: 2em !important; }
+    .grid-votos { grid-template-columns: 1fr; } /* Votos en una columna */
+    .categorias { grid-template-columns: 1fr; max-height: 180px; }
+}
