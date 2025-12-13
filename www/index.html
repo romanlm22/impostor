@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Impostor Game</title>
+    <title>🕵️‍♂️ Impostor Online</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -35,6 +35,7 @@
                     <option value="ONLINE">🎮 Online (Jugadores remotos)</option>
                     <option value="EN_PERSONA">🧍‍♂️ Jugar en Persona (Misma PC/celular)</option>
                 </select>
+                <i class="icon fas fa-gamepad"></i>
             </div>
 
             <div class="tabs-creacion">
@@ -49,8 +50,7 @@
 
             <div id="lobby-tab-manual" class="hidden">
                 <p style="color: var(--text-dim);">Elige una categoría de la lista:</p>
-                <div class="categorias" id="lista-cats-manual">
-                    </div>
+                <div class="categorias" id="lista-cats-manual"></div>
             </div>
 
             <div id="lobby-tab-custom" class="hidden">
@@ -62,7 +62,6 @@
                     <i class="icon fas fa-list"></i>
                     <textarea id="input-custom-palabras" placeholder="Palabras separadas por comas (Ej: Superman, Batman, Spiderman)"></textarea>
                 </div>
-                <p style="color: var(--text-dim); font-size: 0.8em;">(No pongas imágenes en este modo)</p>
             </div>
 
             <div id="player-names-input" class="hidden">
@@ -94,31 +93,32 @@
 
             <div id="host-controls-area">
                 <p style="font-weight: bold;">Jugadores conectados: <span id="count-jugadores">0</span></p>
-                <ul id="lista-jugadores" style="text-align: left; padding-left: 20px;">
-                    </ul>
+                <ul id="lista-jugadores" style="text-align: left; padding-left: 20px;"></ul>
                 <button id="iniciar-juego-btn" onclick="iniciarJuegoHost()">Iniciar Juego</button>
-                <button class="btn-salir" onclick="salirDeSala()">Salir de Sala</button>
             </div>
 
             <div id="player-view-area">
                 <p style="font-weight: bold;">Esperando al Host para iniciar...</p>
-                <ul id="lista-jugadores-player" style="text-align: left; padding-left: 20px;">
-                    </ul>
-                <button class="btn-salir" onclick="salirDeSala()">Salir de Sala</button>
+                <ul id="lista-jugadores-player" style="text-align: left; padding-left: 20px;"></ul>
             </div>
+            
+            <button class="btn-salir" onclick="salirDeSala()">Salir de Sala</button>
         </div>
 
         <div id="rol-pantalla" class="panel hidden">
-            <p style="font-size: 0.9em; color: var(--text-dim);">Categoría: <span id="display-categoria-rol"></span></p>
+            <p style="font-size: 0.9em; color: var(--text-dim);">Categoría: <span id="display-categoria-rol" style="font-weight: bold; color: var(--primary-color);"></span></p>
             <div id="rol-asignado" class="card">
-                <h3><span id="rol-nombre"></span></h3>
+                <h3><span id="rol-nombre">¡MIRA TU ROL!</span></h3>
                 <p><span id="rol-instruccion"></span></p>
             </div>
             <p id="cuenta-regresiva-rol" style="font-size: 1.2em; font-weight: bold;"></p>
         </div>
 
         <div id="juego-pantalla" class="panel hidden">
-            <p style="font-size: 0.9em; color: var(--text-dim);">Categoría: <span id="display-categoria-juego"></span></p>
+            <div style="background-color: rgba(52, 152, 219, 0.1); padding: 5px; border-radius: 8px; margin-bottom: 15px;">
+                Categoría: <strong id="display-categoria-juego" style="color: var(--primary-color);">...</strong>
+            </div>
+
             <div style="background-color: #f0f3f4; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                 <h3 id="palabra-clave-visible" style="margin: 0; color: #34495e;"></h3>
                 <img id="img-pista-juego" class="imagen-pista hidden" src="" alt="Pista de la palabra">
@@ -132,7 +132,7 @@
                 <button class="secondary" onclick="activarFaseVotacionHost()" id="btn-activar-voto" style="display: none;">
                     🗳️ Iniciar Votación
                 </button>
-            </div>
+                </div>
 
             <div id="en-persona-game-controls" class="hidden">
                 <div id="jugador-en-turno-display" style="font-size: 1.3em; font-weight: bold; margin-bottom: 15px;"></div>
@@ -148,20 +148,23 @@
                     ➡️ Siguiente Jugador
                 </button>
             </div>
-
+            
+            <button class="btn-salir" onclick="salirDeSala()" style="margin-top: 20px;">
+                <i class="fas fa-sign-out-alt"></i> Abandonar Partida
+            </button>
         </div>
 
         <div id="votacion-pantalla" class="panel hidden">
-            <h2>Tiempo de Votación</h2>
+            <h2>🗳️ ¡Hora de Votar!</h2>
             <div class="timer">
-                <span id="voting-timer-display" style="font-size: 2em; color: #e74c3c;">150</span>
+                Tiempo: <span id="voting-timer-display" style="font-size: 2em; color: #e74c3c;">150</span>s
             </div>
             
             <p id="estado-votacion" style="margin-top: 15px; font-weight: bold;"></p>
-            <div id="lista-votar-jugadores" class="grid-votos">
-                </div>
+            <div id="lista-votar-jugadores" class="grid-votos"></div>
+            
             <button id="btn-cerrar-votacion" onclick="procesarVotacionHost()" style="display: none; background-color: #e74c3c;">
-                🛑 Cerrar Votación
+                🛑 Forzar Cierre
             </button>
         </div>
 
@@ -174,7 +177,8 @@
                 <img id="imagen-palabra-final" class="imagen-revelada hidden" src="" alt="Palabra revelada">
             </div>
             <p id="lista-impostores-revelados" style="margin-top: 20px; font-size: 1.1em; color: var(--danger-color); font-weight: bold;"></p>
-            <button id="btn-volver-sala" onclick="reiniciarRondaHost()">Volver al Lobby</button>
+            
+            <button id="btn-volver-sala" onclick="reiniciarRondaHost()">🔄 Volver a Sala de Espera</button>
             <button class="btn-salir" onclick="salirDeSala()">Salir del Juego</button>
         </div>
 
