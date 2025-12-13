@@ -421,3 +421,414 @@ body.victoria-impostor {
     .grid-votos { grid-template-columns: 1fr; } /* Votos en una columna */
     .categorias { grid-template-columns: 1fr; max-height: 180px; }
 }
+
+/* =========================================
+   1. BASE & TIPOGRAFÍA (MODO OSCURO)
+   ========================================= */
+:root {
+    --primary-color: #3498db;  /* Azul brillante */
+    --secondary-color: #7f8c8d; /* Gris medio */
+    --accent-color: #9b59b6;    /* Morado (Votar) */
+    --danger-color: #e74c3c;    /* Rojo (Impostor/Salir) */
+    --success-color: #2ecc71;   /* Verde (Ciudadano) */
+    --host-color: #f1c40f;      /* Amarillo (Host) */
+    
+    --bg-main: #1a1a2e;         /* Fondo principal muy oscuro */
+    --bg-panel: #16213e;        /* Fondo del panel central */
+    --bg-element: #0f3460;      /* Fondo de elementos internos (inputs, items) */
+    
+    --text-light: #ecf0f1;      /* Texto casi blanco */
+    --text-dim: #bdc3c7;        /* Texto gris claro */
+}
+
+body {
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-light);
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    /* Añadir una textura sutil o degradado al fondo */
+    background-image: radial-gradient(circle at center, #1a1a2e 0%, #11111f 100%);
+}
+
+h1, h2, h3 {
+    margin-top: 0;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+h1 { color: var(--primary-color); font-size: 2.2em; }
+h2 { color: var(--text-light); }
+p { color: var(--text-dim); line-height: 1.5; }
+
+.highlight { color: var(--primary-color); font-weight: bold; }
+.hidden { display: none !important; }
+
+/* =========================================
+   2. CONTENEDOR PRINCIPAL
+   ========================================= */
+.main-container {
+    background-color: var(--bg-panel);
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    width: 90%;
+    max-width: 480px; /* Un poco más ancho */
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Transiciones suaves al cambiar de panel */
+.panel {
+    animation: fadeIn 0.3s ease-in-out;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================
+   3. FORMULARIOS E INPUTS
+   ========================================= */
+.input-group {
+    margin: 20px 0;
+    position: relative;
+}
+
+input, textarea, select { /* Añadido select */
+    width: 100%;
+    padding: 15px 15px 15px 45px; /* Espacio para el icono */
+    background-color: var(--bg-element);
+    border: 2px solid transparent;
+    border-radius: 8px;
+    color: var(--text-light);
+    font-size: 1em;
+    font-family: inherit;
+    box-sizing: border-box;
+    transition: all 0.3s;
+    -webkit-appearance: none; /* Eliminar estilo nativo de select */
+    -moz-appearance: none;
+    appearance: none;
+}
+
+input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 8px rgba(52, 152, 219, 0.3);
+}
+
+/* Ajuste para el icono del select */
+.input-group select {
+    padding-right: 15px; /* Quitar espacio extra del icono para el select */
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23ecf0f1%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13.2-5.4H18.2c-4.1%200-7.9%201.5-10.9%204.4-6.4%205.9-6.4%2015.6%200%2021.5l123.6%20119.8c3.2%203.1%207.1%204.7%2011.2%204.7s8.1-1.6%2011.2-4.7l123.6-119.8c6.4-5.9%206.4-15.6%200-21.5z%22%2F%3E%3C%2Fsvg%3E');
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px;
+}
+
+
+.icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-dim);
+}
+.input-group select + .icon { /* Ajustar posición del icono si el select está en un input-group */
+    left: auto;
+    right: 15px;
+    transform: translateY(-50%) rotate(0deg); /* Asegurar que no rote */
+    pointer-events: none; /* Para que el click pase al select */
+    color: var(--text-light);
+}
+
+
+/* Inputs personalizados en el lobby */
+.input-custom {
+    padding: 12px;
+    background-color: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    margin-bottom: 10px;
+}
+
+/* =========================================
+   4. BOTONES MODERNOS
+   ========================================= */
+button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 14px 24px;
+    margin: 10px 0;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 100%;
+    font-size: 1.05em;
+    font-weight: 600;
+    transition: all 0.2s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+button:hover {
+    background-color: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+button:active { transform: translateY(0); }
+
+button.secondary {
+    background-color: transparent;
+    border: 2px solid var(--secondary-color);
+    color: var(--text-dim);
+    box-shadow: none;
+}
+button.secondary:hover {
+    background-color: rgba(255,255,255,0.05);
+    color: var(--text-light);
+    border-color: var(--text-light);
+}
+
+.btn-salir {
+    background-color: var(--danger-color);
+    margin-top: 20px;
+}
+.btn-salir:hover { background-color: #c0392b; }
+
+/* Botón pequeño de expulsar (Kick) */
+.btn-kick {
+    background: var(--danger-color);
+    color: white;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 6px;
+    margin-left: 8px;
+    font-size: 0.8em;
+    width: auto; /* Sobreescribe el 100% global */
+    box-shadow: none;
+}
+
+/* =========================================
+   5. LISTAS (JUGADORES Y ORDEN)
+   ========================================= */
+ul { list-style: none; padding: 0; }
+
+li {
+    background-color: rgba(255,255,255,0.05);
+    margin: 8px 0;
+    padding: 12px 15px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 4px solid transparent;
+    transition: all 0.2s;
+}
+
+/* Resaltar al propio jugador en la lista */
+#lista-orden-habla li span[style*="#3498db"] {
+    /* El estilo inline ya lo maneja JS, pero esto refuerza */
+    font-weight: bold;
+}
+/* Resaltar al host con un borde dorado sutil */
+li span[style*="IsHost"] { /* No se puede seleccionar por estilo inline fácilmente, pero visualmente el icono ayuda */ }
+
+/* =========================================
+   6. LOBBY & TABS DE CREACIÓN
+   ========================================= */
+#host-controls-area {
+    background-color: rgba(255,255,255,0.03) !important; /* Sobreescribir estilo inline */
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-light);
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 20px;
+}
+
+.tabs-creacion {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+    border-bottom: 2px solid rgba(255,255,255,0.1);
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 10px 15px;
+    color: var(--text-dim);
+    border-bottom: 3px solid transparent;
+    font-size: 0.95em;
+    width: auto;
+    box-shadow: none;
+    margin: 0;
+    border-radius: 5px 5px 0 0;
+}
+
+.tab-btn.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    background-color: rgba(52, 152, 219, 0.05);
+}
+
+.tab-btn:hover:not(.active) {
+    color: var(--text-light);
+    background-color: rgba(255,255,255,0.05);
+}
+
+.categorias {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+/* Scrollbar personalizado para el modo oscuro */
+.categorias::-webkit-scrollbar { width: 6px; }
+.categorias::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+
+.categoria-btn {
+    padding: 12px;
+    font-size: 0.9em;
+    font-weight: 600;
+    text-transform: uppercase;
+    background-color: rgba(255,255,255,0.05);
+    color: var(--text-dim);
+    border: 2px solid transparent;
+    box-shadow: none;
+    margin: 0;
+}
+
+.categoria-btn:hover {
+    background-color: rgba(255,255,255,0.1);
+    transform: translateY(-1px);
+}
+
+.categoria-btn.selected {
+    background-color: rgba(52, 152, 219, 0.2);
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* =========================================
+   7. PANTALLAS DE JUEGO Y ROL
+   ========================================= */
+/* Header de categoría en el juego */
+#juego-pantalla > div[style*="background-color: #f0f3f4"] {
+    background-color: rgba(52, 152, 219, 0.1) !important;
+    border: 1px solid var(--primary-color);
+    color: var(--text-light);
+}
+
+/* Tarjeta de Rol - ¡Mucho más impactante! */
+.card {
+    padding: 25px;
+    border-radius: 12px;
+    margin: 20px 0;
+    color: var(--text-light);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Rol Normal (Ciudadano) */
+.normal-rol {
+    background: linear-gradient(135deg, #1e3c29, #2ecc71);
+    border-left: 6px solid #27ae60;
+}
+.normal-rol h3 { color: white; font-size: 1.8em; text-transform: uppercase; }
+.normal-rol p { color: rgba(255,255,255,0.9); font-size: 1.2em; }
+
+/* Rol Impostor */
+.impostor-rol {
+    background: linear-gradient(135deg, #4a2321, #e74c3c);
+    border-left: 6px solid #c0392b;
+}
+.impostor-rol h3 { color: white; font-size: 1.8em; }
+.impostor-rol p { color: rgba(255,255,255,0.9); font-size: 1.2em; font-weight: bold; }
+
+.instruccion-rol {
+    font-style: italic;
+    opacity: 0.8;
+    margin-top: 20px;
+}
+
+/* Imágenes */
+.imagen-pista, .imagen-revelada {
+    max-width: 100%;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+    margin: 15px auto;
+    display: block;
+    object-fit: cover;
+    border: 3px solid rgba(255,255,255,0.1);
+}
+.imagen-pista { max-height: 180px; }
+.imagen-revelada { max-height: 280px; }
+
+/* Timer */
+.timer {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: var(--text-light);
+    background: rgba(255,255,255,0.05);
+    padding: 10px;
+    border-radius: 8px;
+    margin: 15px 0;
+}
+
+/* =========================================
+   8. VOTACIÓN
+   ========================================= */
+#voting-timer-display {
+    font-size: 2em;
+    /* El color se mantiene inline en el HTML (#e74c3c), que se ve bien en oscuro */
+}
+
+.grid-votos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Responsive */
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.btn-votar-jugador {
+    background-color: rgba(255,255,255,0.05);
+    border: 2px solid rgba(255,255,255,0.1);
+    color: var(--text-light);
+    padding: 12px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+    box-shadow: none;
+    margin: 0;
+}
+
+.btn-votar-jugador:hover:not([disabled]) {
+    background-color: rgba(255,255,255,0.1);
+    border-color: var(--text-dim);
+    transform: translateY(-2px);
+}
+
+.btn-votar-jugador.seleccionado {
+    background-color: rgba(155, 89, 182, 0.2); /* Tono morado */
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 10px rgba(155, 89, 182, 0.3);
+}
+
+/* =========================================
+   9. PANTALLA DE VICTORIA
+   ========================================= */
+/* Fondos específicos para la victoria */
+body.victoria-inocente {
+    background-image: radial-gradient(circle at center, #1e3c29 0%, #111f1a 100%);
+}
+body.victoria-impostor {
+    background-image: radial-gradient(circle)}
