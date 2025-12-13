@@ -71,7 +71,7 @@ let supabaseSubscription = null;
 let timerInterval = null;    
 let votingInterval = null;
 let rolTimeout = null; 
-let rolTimerInterval = null; // Nuevo para el contador de 12s
+let rolTimerInterval = null; 
 let activeLobbyTab = 'aleatorio'; 
 let modoJuego = 'ONLINE'; 
 
@@ -116,7 +116,6 @@ function mostrarPanelCrear() {
     cargarCategoriasManuales();
     mostrarPanel('crear');
     
-    // Listener para cambiar el modo
     document.getElementById('modo-juego-selector').removeEventListener('change', actualizarInterfazCrear);
     document.getElementById('modo-juego-selector').addEventListener('change', actualizarInterfazCrear);
     actualizarInterfazCrear(); 
@@ -143,11 +142,9 @@ function mostrarPanelUnirse() {
 function cambiarTabLobby(modo) {
     activeLobbyTab = modo; 
     
-    // Ocultar pestañas de configuración del panel CREAR
     const tabsContent = ['lobby-tab-aleatorio', 'lobby-tab-manual', 'lobby-tab-custom'];
     tabsContent.forEach(id => document.getElementById(id).classList.add('hidden'));
     
-    // Quitar y poner clase activa de botones
     const tabsBtns = ['btn-tab-aleatorio', 'btn-tab-manual', 'btn-tab-custom'];
     tabsBtns.forEach(id => document.getElementById(id).classList.remove('active'));
 
@@ -198,20 +195,18 @@ async function crearSala() {
         
         if (nombresArray.length < 3) return alert('Modo En Persona: Necesitas al menos 3 nombres de jugadores.');
         
-        // Crear jugadores temporales (solo para el host local)
         jugadoresEnPersona = nombresArray.map((nombre, index) => ({
-            id: 'local_' + index.toString(), // ID local para el modo En Persona
+            id: 'local_' + index.toString(), 
             nombre: nombre,
             esHost: false, 
             rol: 'PENDIENTE', 
             estado: 'VIVO', 
             voto: null
         }));
-        // El host real de Supabase es el que creó la sala (usado para la sincronización)
+        // Solo el host real para Supabase
         jugadoresIniciales = [{ id: Date.now().toString(36), nombre: nombreJugador, esHost: true, rol: 'HOST', estado: 'VIVO', voto: null }];
 
     } else { 
-        // Modo Online estándar
         jugadoresIniciales = [{ id: Date.now().toString(36), nombre: nombreJugador, esHost: true, rol: 'PENDIENTE', estado: 'VIVO', voto: null }];
     }
 
@@ -281,6 +276,22 @@ async function unirseSala() {
     iniciarSuscripcionSala(codigo);
 }
 
+// --- VOLVER A CONFIGURACIÓN (Host) ---
+async function volverAConfiguracionHost() {
+    if (!esHost) return;
+    if (confirm("¿Estás seguro de volver a la configuración? Se eliminará esta sala y tendrás que crear una nueva.")) {
+        // Eliminar la sala de Supabase
+        await supabaseClient.from('salas').delete().eq('id', salaActual.id);
+        
+        // Volver al panel de creación
+        if (supabaseSubscription) supabaseClient.removeChannel(supabaseSubscription);
+        salaActual = null;
+        esHost = true; // El host sigue siendo host, pero sin sala activa
+        mostrarPanelCrear();
+    }
+}
+
+
 // --- SALIR DE SALA (Con migración de Host) ---
 async function salirDeSala() {
     if (!salaActual) return;
@@ -288,7 +299,6 @@ async function salirDeSala() {
         
         let nuevosJugadores = salaActual.jugadores.filter(j => j.nombre !== nombreJugador);
         
-        // LÓGICA: Si yo era Host, pasamos el liderazgo al siguiente
         if (esHost && salaActual.modo_juego === 'ONLINE' && nuevosJugadores.length > 0) {
             const proximoHostIndex = nuevosJugadores.findIndex(j => j.rol !== 'HOST');
             if (proximoHostIndex !== -1) {
@@ -297,10 +307,8 @@ async function salirDeSala() {
         }
         
         if (nuevosJugadores.length === 0 || (salaActual.modo_juego === 'EN_PERSONA' && esHost)) {
-            // Si no queda nadie O si es modo EN_PERSONA y el host real sale, borrar sala.
             await supabaseClient.from('salas').delete().eq('id', salaActual.id);
         } else {
-            // Actualizar lista
             await supabaseClient.from('salas').update({ jugadores: nuevosJugadores }).eq('id', salaActual.id);
         }
         
@@ -320,7 +328,7 @@ function volverAlInicio() {
     if (timerInterval) clearInterval(timerInterval);
     if (votingInterval) clearInterval(votingInterval);
     if (rolTimeout) clearTimeout(rolTimeout);
-    if (rolTimerInterval) clearInterval(rolTimerInterval); // Limpiar timer 12s
+    if (rolTimerInterval) clearInterval(rolTimerInterval);
     salaActual = null;
     esHost = false;
     jugadoresEnPersona = [];
@@ -342,12 +350,28 @@ function mostrarSalaEspera(codigo, categoria) {
     if (esHost) {
         hostControls.style.display = 'block';
         playerView.style.display = 'none';
+        
+        // Añadir el botón de volver a configuración para el host
+        let btnVolver = document.getElementById('btn-volver-config');
+        if (!btnVolver) {
+            btnVolver = document.createElement('button');
+            btnVolver.id = 'btn-volver-config';
+            btnVolver.textContent = '🔙 Volver a Configuración';
+            btnVolver.className = 'secondary';
+            btnVolver.onclick = volverAConfiguracionHost;
+            document.getElementById('sala-pantalla').insertBefore(btnVolver, document.getElementById('host-controls-area'));
+        } else {
+            btnVolver.style.display = 'block';
+        }
+
         if (salaActual.modo_juego === 'EN_PERSONA') {
              actualizarListaJugadores(jugadoresEnPersona); 
         }
     } else {
         hostControls.style.display = 'none';
         playerView.style.display = 'block';
+        let btnVolver = document.getElementById('btn-volver-config');
+        if (btnVolver) btnVolver.style.display = 'none';
     }
 }
 
@@ -389,7 +413,6 @@ function manejarCambioSala(nuevaSala) {
         } else if (nuevaSala.estado === 'VICTORIA_IMPOSTOR' || nuevaSala.estado === 'VICTORIA_INOCENTE') {
             mostrarPantallaVictoria(nuevaSala);
         } else if (nuevaSala.estado === 'ESPERA') {
-             // Si el modo persona vuelve a espera
              mostrarSalaEspera(nuevaSala.codigo, nuevaSala.categoria);
         }
         return;
@@ -585,16 +608,18 @@ function asignarRolLocal(temaGlobal, jugadores, yo) {
     }
 
     mostrarPanel('rol');
-    document.getElementById('display-categoria-rol').textContent = salaActual.categoria.toUpperCase();
-
+    
     const rolNombre = document.getElementById('rol-nombre');
     const rolInstr = document.getElementById('rol-instruccion');
     const cuentaReg = document.getElementById('cuenta-regresiva-rol');
     const rolCard = document.getElementById('rol-asignado');
 
+    // Muestra la categoría SIEMPRE
+    document.getElementById('display-categoria-rol').textContent = salaActual.categoria.toUpperCase();
+
     if (yo.rol === 'IMPOSTOR') {
         rolNombre.textContent = "¡IMPOSTOR!";
-        rolInstr.textContent = "🤫 Shhh... No conoces la palabra.";
+        rolInstr.textContent = "🤫 Shhh... No conoces la palabra. ¡Ya sabes la categoría!";
         rolCard.className = 'card impostor-rol';
     } else {
         rolNombre.textContent = temaGlobal.toUpperCase();
@@ -652,9 +677,8 @@ function mostrarPantallaJuegoEnPersona(sala) {
     document.getElementById('btn-siguiente-jugador').classList.add('hidden');
     document.getElementById('btn-desbloquear-rol').disabled = false;
     document.getElementById('btn-desbloquear-rol').textContent = "👁️ Desbloquear Mi Rol";
-    document.getElementById('timer-display').textContent = "2:30"; // Resetear el timer de debate
+    document.getElementById('timer-display').textContent = "2:30"; 
 
-    // Mostrar el turno del primer jugador
     const vivos = jugadoresEnPersona.filter(j => j.estado === 'VIVO');
     if (vivos.length > 0) {
         const jugadorTurnoId = vivos[jugadorActualIndex]?.id;
@@ -673,7 +697,6 @@ function iniciarTimerRol() {
         
         if (tiempo <= 0) {
             clearInterval(rolTimerInterval);
-            // Esto asegura que si el timer de 12s termina, se oculta y habilita el botón Siguiente
             if (rolTimeout) clearTimeout(rolTimeout); 
             document.getElementById('display-rol-en-persona').classList.add('hidden');
             document.getElementById('btn-siguiente-jugador').classList.remove('hidden');
@@ -701,6 +724,9 @@ function desbloquearRolEnPersona() {
     const rolInstr = document.getElementById('rol-instruccion-en-persona');
     const imgPista = document.getElementById('img-pista-en-persona');
 
+    // Muestra la categoría SIEMPRE
+    document.getElementById('display-categoria-rol').textContent = salaActual.categoria.toUpperCase();
+
     // 1. Mostrar el rol
     rolDisplay.classList.remove('hidden');
     rolDisplay.className = `card ${jugadorEnTurno.rol === 'IMPOSTOR' ? 'impostor-rol' : 'normal-rol'}`;
@@ -723,9 +749,9 @@ function desbloquearRolEnPersona() {
     }
     
     document.getElementById('btn-desbloquear-rol').disabled = true;
-    iniciarTimerRol(); // Iniciar el contador de 12 segundos
+    iniciarTimerRol(); 
 
-    // Ocultar el rol después de 12 segundos (redundante con el timer, pero de seguridad)
+    // Ocultar el rol después de 12 segundos (seguridad)
     rolTimeout = setTimeout(() => {
         document.getElementById('display-rol-en-persona').classList.add('hidden');
         document.getElementById('btn-siguiente-jugador').classList.remove('hidden');
@@ -742,7 +768,6 @@ function siguienteJugadorEnPersona() {
     const vivos = jugadoresEnPersona.filter(j => j.estado === 'VIVO');
     
     if (jugadorActualIndex >= vivos.length) {
-        // Todos los vivos vieron su rol, ahora comienza la fase de debate
         mostrarPantallaDebateEnPersona();
         return;
     }
@@ -768,7 +793,7 @@ function mostrarPantallaDebateEnPersona() {
     document.getElementById('palabra-clave-visible').style.color = "#e74c3c"; // Color de alerta/atención
     document.getElementById('img-pista-juego').classList.add('hidden');
     
-    // Ocultar botón de votación (el host lo hace manualmente o por tiempo)
+    // OCULTAR botón de votación (MANUAL en este modo)
     document.getElementById('btn-activar-voto').style.display = 'none';
     
     iniciarTimerVisual(true); // Iniciar el timer de debate (150s)
@@ -806,7 +831,6 @@ function iniciarTimerVisual(esModoPersona = false) {
 
 async function activarFaseVotacionHost() {
     if (!esHost) return;
-    // Solo para modo ONLINE
     if (salaActual.modo_juego !== 'ONLINE') return;
 
     const jugadoresLimpios = salaActual.jugadores.map(j => ({ ...j, voto: null }));
@@ -839,7 +863,6 @@ function mostrarPantallaVotacion(jugadores, yo, esModoPersona = false) {
     const estadoVoto = document.getElementById('estado-votacion');
     const vivos = jugadores.filter(j => j.estado === 'VIVO');
     
-    // --- LÓGICA DE VOTACIÓN ---
     
     if (esModoPersona) {
         estadoVoto.textContent = "Host: Recoge los votos manualmente.";
@@ -857,7 +880,6 @@ function mostrarPantallaVotacion(jugadores, yo, esModoPersona = false) {
 
         if (!esModoPersona && yo && j.id === yo.id) return; 
         
-        // Simulación de voto para el host en modo persona
         if (esModoPersona) {
             btn.innerHTML = `<span>${j.nombre}</span> ${j.voto ? '✅' : ' '}`;
             btn.onclick = () => {
@@ -1049,7 +1071,7 @@ async function reiniciarRondaHost() {
 
     if (salaActual.modo_juego === 'EN_PERSONA') {
         jugadoresEnPersona = jugadoresEnPersona.map(j => ({ ...j, rol: 'PENDIENTE', estado: 'VIVO', voto: null }));
-        jugadorActualIndex = 0; // Resetear índice local
+        jugadorActualIndex = 0; 
         turnoEnCurso = false;
     }
 
