@@ -184,60 +184,73 @@
                 return Math.random().toString(36).substring(2, 8).toUpperCase();
             }
 
-            async function crearSala() {
-                // 1. Validar el modo de juego
-                modoJuego = document.getElementById('modo-juego-selector').value;
+           // [Línea 320]
+async function crearSala() {
+    // 1. Validar el modo de juego
+    modoJuego = document.getElementById('modo-juego-selector').value;
 
-                let jugadoresIniciales = [];
-                if (modoJuego === 'EN_PERSONA') {
-                    const nombresRaw = document.getElementById('input-nombres-jugadores').value.trim();
-                    const nombresArray = nombresRaw.split('\n').map(n => n.trim()).filter(n => n.length > 0);
-                    
-                    if (nombresArray.length < 3) return alert('Modo En Persona: Necesitas al menos 3 nombres de jugadores.');
-                    
-                    jugadoresEnPersona = nombresArray.map((nombre, index) => ({
-                        id: 'local_' + index.toString(), 
-                        nombre: nombre,
-                        esHost: false, 
-                        rol: 'PENDIENTE', 
-                        estado: 'VIVO', 
-                        voto: null
-                    }));
-                    jugadoresIniciales = [{ id: Date.now().toString(36), nombre: nombreJugador, esHost: true, rol: 'HOST', estado: 'VIVO', voto: null }];
-
-                } else { 
-                    jugadoresIniciales = [{ id: Date.now().toString(36), nombre: nombreJugador, esHost: true, rol: 'PENDIENTE', estado: 'VIVO', voto: null }];
-                }
+    // --- LEER LA CATEGORÍA SELECCIONADA EN EL LOBBY ---
+    let categoriaInicialDisplay = activeLobbyTab.toUpperCase();
+    if (categoriaInicialDisplay === 'MANUAL' && categoriaSeleccionada) {
+        categoriaInicialDisplay = categoriaSeleccionada.toUpperCase();
+    } else if (categoriaInicialDisplay === 'CUSTOM') {
+        const customNombre = document.getElementById('input-custom-titulo').value.trim();
+        categoriaInicialDisplay = customNombre || 'CUSTOM (Sin Nombre)';
+    }
 
 
-                const codigo = generarCodigo();
+    let jugadoresIniciales = [];
+    if (modoJuego === 'EN_PERSONA') {
+        const nombresRaw = document.getElementById('input-nombres-jugadores').value.trim();
+        const nombresArray = nombresRaw.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+        
+        if (nombresArray.length < 3) return alert('Modo En Persona: Necesitas al menos 3 nombres de jugadores.');
+        
+        jugadoresEnPersona = nombresArray.map((nombre, index) => ({
+            id: 'local_' + index.toString(), 
+            nombre: nombre,
+            esHost: false, 
+            rol: 'PENDIENTE', 
+            estado: 'VIVO', 
+            voto: null
+        }));
+        jugadoresIniciales = [{ id: Date.now().toString(36), nombre: nombreJugador, esHost: true, rol: 'HOST', estado: 'VIVO', voto: null }];
 
-                const { data: nuevaSala, error } = await supabaseClient
-                    .from('salas')
-                    .insert({
-                        codigo: codigo,
-                        estado: 'ESPERA',
-                        modo_juego: modoJuego, 
-                        categoria: 'ALEATORIO', 
-                        lista_palabras: [], 
-                        tema: '', 
-                        tema_imagen: null, 
-                        jugadores: jugadoresIniciales
-                    })
-                    .select()
-                    .single();
+    } else { 
+        jugadoresIniciales = [{ id: Date.now().toString(36), nombre: nombreJugador, esHost: true, rol: 'PENDIENTE', estado: 'VIVO', voto: null }];
+    }
 
-                if (error) {
-                    console.error('Error:', error);
-                    return alert('Error al crear sala.');
-                }
 
-                salaActual = nuevaSala;
-                esHost = true;
-                
-                mostrarSalaEspera(codigo, "ALEATORIO");
-                iniciarSuscripcionSala(codigo);
-            }
+    const codigo = generarCodigo();
+
+    const { data: nuevaSala, error } = await supabaseClient
+        .from('salas')
+        .insert({
+            codigo: codigo,
+            estado: 'ESPERA',
+            modo_juego: modoJuego, 
+            // Guardamos la pestaña activa como categoría inicial en la DB, aunque solo sea para display
+            categoria: categoriaInicialDisplay, 
+            lista_palabras: [], 
+            tema: '', 
+            tema_imagen: null, 
+            jugadores: jugadoresIniciales
+        })
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Error:', error);
+        return alert('Error al crear sala.');
+    }
+
+    salaActual = nuevaSala;
+    esHost = true;
+    
+    // Usamos la variable local para el display en el frontend
+    mostrarSalaEspera(codigo, categoriaInicialDisplay);
+    iniciarSuscripcionSala(codigo);
+}
 
             async function unirseSala() {
                 const codigo = document.getElementById('codigo-sala-input').value.trim().toUpperCase();
@@ -317,7 +330,7 @@
 
             async function expulsarJugadorHost(idJugadorAExpulsar) {
                 if (!esHost) return;
-                if (!confirm("¿Quieres expulsar a este jugador de la sala?")) return;
+                if (!confirm("¿Quieres expulsar a este jugador de la sala?")) return;   
                 const nuevosJugadores = salaActual.jugadores.filter(j => j.id !== idJugadorAExpulsar);
                 await supabaseClient.from('salas').update({ jugadores: nuevosJugadores }).eq('id', salaActual.id);
             }
