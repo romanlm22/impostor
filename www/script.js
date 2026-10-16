@@ -196,7 +196,10 @@ async function crearSala() {
         codigo: codigo, estado: 'ESPERA', modo_juego: modoJuego, categoria: catInicial, jugadores: jugadoresIniciales
     }).select().single();
 
-    if (error) return alert('Error al crear sala.');
+    if (error) {
+    console.error('Supabase error:', error);
+    return alert('Error al crear sala: ' + error.message);
+}
     salaActual = nuevaSala; esHost = true;
     mostrarSalaEspera(codigo, catInicial);
     iniciarSuscripcionSala(codigo);
