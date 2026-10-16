@@ -219,6 +219,50 @@ async function unirseSala() {
     iniciarSuscripcionSala(codigo);
 }
 
+async function salirDeSala() {
+    // Cortar la suscripción realtime
+    if (supabaseSubscription) {
+        supabaseClient.removeChannel(supabaseSubscription);
+        supabaseSubscription = null;
+    }
+
+    // Cortar timers
+    clearInterval(timerInterval);
+    clearInterval(votingInterval);
+    clearInterval(rolTimerInterval);
+    clearTimeout(rolTimeout);
+
+    if (salaActual) {
+        try {
+            if (esHost) {
+                // El host se va: se borra la sala
+                await supabaseClient.from('salas').delete().eq('id', salaActual.id);
+            } else {
+                // Un jugador se va: se lo saca de la lista
+                const { data: sala } = await supabaseClient
+                    .from('salas').select('jugadores').eq('id', salaActual.id).single();
+                if (sala) {
+                    const restantes = sala.jugadores.filter(j => j.nombre !== nombreJugador);
+                    await supabaseClient.from('salas')
+                        .update({ jugadores: restantes }).eq('id', salaActual.id);
+                }
+            }
+        } catch (e) {
+            console.error('Error al salir:', e);
+        }
+    }
+
+    // Reiniciar estado local
+    salaActual = null;
+    esHost = false;
+    jugadoresEnPersona = [];
+    jugadorActualIndex = 0;
+    turnoEnCurso = false;
+    categoriaSeleccionada = '';
+
+    mostrarPanelInicio();
+}
+
 function mostrarSalaEspera(codigo, categoria) {
     mostrarPanel('sala');
     document.getElementById('codigo-sala-display').textContent = `SALA: ${codigo}`;
